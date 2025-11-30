@@ -225,6 +225,12 @@ def login_user(email: str, password: str) -> Dict:
     Returns dict with status, message, and token if successful.
     """
     email = email.lower().strip()
+    password = password.strip() if password else ""
+    
+    # Debug logging
+    print(f"[LOGIN] Attempting login for: {email}")
+    print(f"[LOGIN] Test email match: {email == TEST_EMAIL}")
+    print(f"[LOGIN] Test password match: {password == TEST_PASSWORD}")
     
     # Check test credentials (bypass OTP)
     if email == TEST_EMAIL and password == TEST_PASSWORD:
