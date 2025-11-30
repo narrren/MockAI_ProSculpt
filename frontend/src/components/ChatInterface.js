@@ -4,7 +4,7 @@ import speechService from '../services/speechService';
 import { t } from '../i18n/languages';
 import './ChatInterface.css';
 
-const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange, onCodingQuestion }) => {
+const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange, onCodingQuestion, isMuted = false }) => {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
@@ -20,6 +20,32 @@ const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, on
 
   // Function to speak a message
   const speakMessage = (text) => {
+    // If muted, don't speak but still show subtitles
+    if (isMuted) {
+      console.log('Muted: Skipping speech, showing subtitles only');
+      setCurrentSpeechText(text);
+      if (onSpeechTextChange) {
+        onSpeechTextChange(text);
+      }
+      // Still update speaking state for avatar animation
+      setIsSpeaking(true);
+      if (onSpeakingStateChange) {
+        onSpeakingStateChange(true);
+      }
+      // Simulate speaking duration for subtitle display
+      setTimeout(() => {
+        setIsSpeaking(false);
+        setCurrentSpeechText('');
+        if (onSpeakingStateChange) {
+          onSpeakingStateChange(false);
+        }
+        if (onSpeechTextChange) {
+          onSpeechTextChange('');
+        }
+      }, Math.min(text.length * 50, 5000)); // Estimate based on text length
+      return;
+    }
+
     if (!speechService.isSynthesisAvailable()) {
       console.warn('Text-to-speech not available');
       return;

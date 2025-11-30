@@ -18,10 +18,64 @@
 .chat__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 12px;
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
   border-bottom: 1px solid var(--gray-200);
+}
+
+.chat__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat__mute-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.chat__mute-btn:hover {
+  background: var(--gray-100);
+}
+
+.chat__mute-btn.muted {
+  opacity: 0.6;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.chat__mute-btn.muted:hover {
+  background: rgba(220, 38, 38, 0.2);
+}
+
+.chat__minimize {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.chat__minimize:hover {
+  background: var(--gray-100);
 }
 
 .chat__body {

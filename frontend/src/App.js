@@ -606,13 +606,28 @@ function App() {
         <div className="chat__panel">
           <div className="chat__header">
             <div className="chat__title">💬 Interview Chat</div>
-            <button
-              onClick={() => setIsChatMinimized(!isChatMinimized)}
-              className="chat__minimize"
-              title={isChatMinimized ? 'Maximize chat' : 'Minimize chat'}
-            >
-              {isChatMinimized ? '⬆️' : '⬇️'}
-            </button>
+            <div className="chat__header-actions">
+              <button
+                onClick={() => {
+                  setIsInterviewerMuted(!isInterviewerMuted);
+                  // Stop any current speech when muting
+                  if (!isInterviewerMuted) {
+                    speechService.stopSpeaking();
+                  }
+                }}
+                className={`chat__mute-btn ${isInterviewerMuted ? 'muted' : ''}`}
+                title={isInterviewerMuted ? 'Unmute interviewer' : 'Mute interviewer'}
+              >
+                {isInterviewerMuted ? '🔇' : '🔊'}
+              </button>
+              <button
+                onClick={() => setIsChatMinimized(!isChatMinimized)}
+                className="chat__minimize"
+                title={isChatMinimized ? 'Maximize chat' : 'Minimize chat'}
+              >
+                {isChatMinimized ? '⬆️' : '⬇️'}
+              </button>
+            </div>
           </div>
           {!isChatMinimized && (
             <>
@@ -634,6 +649,7 @@ function App() {
                   setCurrentCodingQuestion(question);
                   setSuggestedLanguage(language);
                 }}
+                isMuted={isInterviewerMuted}
               />
             </>
           )}
