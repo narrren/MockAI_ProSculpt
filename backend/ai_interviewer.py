@@ -10,7 +10,8 @@ load_dotenv(dotenv_path=env_path)
 class InterviewerAI:
     def __init__(self, system_prompt_path=None):
         self.context = []  # Memory of the conversation
-        self.model_name = "gemini-2.5-flash"  # Default Gemini model (fast and efficient)
+        # Try to use the latest available model, fallback to gemini-1.5-flash
+        self.model_name = "gemini-1.5-flash"  # Default Gemini model (fast and efficient)
         
         # Get API key from environment variable
         api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
