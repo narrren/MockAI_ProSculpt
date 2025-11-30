@@ -60,6 +60,7 @@ init_db()
 
 class ChatMessage(BaseModel):
     message: str
+    user_id: Optional[str] = None  # For tracking test accounts
 
 
 class CodeRequest(BaseModel):
@@ -247,11 +248,52 @@ async def get_ai_status():
         }
 
 
+# Track question count for test accounts
+test_account_question_count = {}  # {user_email: count}
+
 @app.post("/chat")
 async def chat_endpoint(data: ChatMessage):
     """Handle chat messages with the AI interviewer"""
     user_text = data.message
+    
+    # Check if this is a test account and limit questions
+    is_test_account = False
+    user_email = None
+    
+    if data.user_id:
+        # Check if user is test account
+        from auth import TEST_EMAIL, users_db
+        user_email = data.user_id
+        if user_email == TEST_EMAIL or (user_email in users_db and users_db[user_email].get("is_test", False)):
+            is_test_account = True
+            
+            # Initialize question count if not exists
+            if user_email not in test_account_question_count:
+                test_account_question_count[user_email] = 0
+            
+            # Check if we've reached the limit (3 questions)
+            # Count questions from AI responses (not user messages)
+            # We'll count when AI responds, so check before generating response
+            if test_account_question_count[user_email] >= 3:
+                return {
+                    "reply": "Thank you for testing Aptiva! You've completed the test interview with 3 questions. This is a test account limitation. For a full interview experience, please sign up with a regular account.",
+                    "is_coding_question": False,
+                    "suggested_language": None,
+                    "test_limit_reached": True
+                }
+    
     response = ai.chat(user_text)
+    
+    # Increment question count for test accounts (only for AI responses that are questions)
+    if is_test_account and user_email:
+        # Check if the response is a question (contains question mark or is asking something)
+        if "?" in response or ai.is_coding_question(response):
+            test_account_question_count[user_email] = test_account_question_count.get(user_email, 0) + 1
+            print(f"[TEST ACCOUNT] Question count for {user_email}: {test_account_question_count[user_email]}/3")
+            
+            # If this was the 3rd question, add a note
+            if test_account_question_count[user_email] >= 3:
+                response += "\n\n[Note: This is your final question as a test account. After answering, the test interview will be complete.]"
     
     # Detect if the response contains a coding question
     is_coding_question = ai.is_coding_question(response)

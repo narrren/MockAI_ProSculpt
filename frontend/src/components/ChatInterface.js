@@ -4,7 +4,7 @@ import speechService from '../services/speechService';
 import { t } from '../i18n/languages';
 import './ChatInterface.css';
 
-const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange, onCodingQuestion, isMuted = false }) => {
+const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange, onCodingQuestion, isMuted = false, userId = null }) => {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
@@ -154,7 +154,10 @@ const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, on
     setIsLoading(true);
 
     try {
-      const res = await axios.post(`${apiUrl}/chat`, { message: userMessage });
+      const res = await axios.post(`${apiUrl}/chat`, { 
+        message: userMessage,
+        user_id: userId  // Pass user ID to track test accounts
+      });
       const aiMessage = { sender: 'ai', text: res.data.reply };
       setMessages([...newMsgs, aiMessage]);
       

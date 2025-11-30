@@ -655,6 +655,7 @@ function App() {
                   setSuggestedLanguage(language);
                 }}
                 isMuted={isInterviewerMuted}
+                userId={user?.email || null}
               />
             </>
           )}
