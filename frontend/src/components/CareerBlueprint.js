@@ -29,8 +29,8 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
 
   if (loading) {
     return (
-      <div className="career-blueprint loading">
-        <div className="spinner"></div>
+      <div className="blueprint card card--padded" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
+        <div className="spinner" style={{ margin: '0 auto var(--space-4)' }}></div>
         <p>Generating your career roadmap...</p>
       </div>
     );
@@ -38,8 +38,8 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
 
   if (error) {
     return (
-      <div className="career-blueprint error">
-        <p>{error}</p>
+      <div className="blueprint card card--padded">
+        <div className="badge badge--danger" style={{ marginBottom: 'var(--space-4)' }}>{error}</div>
         <button className="btn btn--primary btn--sm" onClick={fetchBlueprint}>
           Retry
         </button>

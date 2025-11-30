@@ -54,24 +54,22 @@ const SkillHeatmap = ({ apiUrl, userId }) => {
   return (
     <div className="heatmap card card--padded">
       <h3 className="card__title">Real-time Skill Assessment</h3>
-      <div className="heatmap__item">
-        {Object.entries(skills).map(([key, value]) => (
-          <div key={key} className="heatmap__item">
-            <div className="heatmap__label">{skillLabels[key]}</div>
-            <div className="heatmap__bar">
-              <div
-                className={`heatmap__fill ${
-                  value >= 75 ? 'heatmap__fill--high' : 
-                  value >= 50 ? 'heatmap__fill--medium' : 
-                  'heatmap__fill--low'
-                }`}
-                style={{ width: `${value}%` }}
-              />
-            </div>
-            <div className="heatmap__value">{Math.round(value)}</div>
+      {Object.entries(skills).map(([key, value]) => (
+        <div key={key} className="heatmap__item">
+          <div className="heatmap__label">{skillLabels[key]}</div>
+          <div className="heatmap__bar">
+            <div
+              className={`heatmap__fill ${
+                value >= 75 ? 'heatmap__fill--high' : 
+                value >= 50 ? 'heatmap__fill--medium' : 
+                'heatmap__fill--low'
+              }`}
+              style={{ width: `${value}%` }}
+            />
           </div>
-        ))}
-      </div>
+          <div className="heatmap__value">{Math.round(value)}</div>
+        </div>
+      ))}
     </div>
   );
 };
