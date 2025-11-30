@@ -13,6 +13,19 @@
   background: var(--surface);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.rounds__tracker::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gray-200);
+  z-index: 0;
+  transform: translateY(-50%);
 }
 
 .rounds__item {
@@ -24,6 +37,9 @@
   padding: var(--space-3);
   border-radius: var(--radius-md);
   transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
 }
 
 .rounds__item--active {

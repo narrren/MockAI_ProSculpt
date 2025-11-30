@@ -603,7 +603,7 @@ function App() {
       <div className={`float-chat chat ${isChatMinimized ? 'chat--min' : ''}`}>
         <div className="chat__panel">
           <div className="chat__header">
-            <div className="chat__title">💬 {t('chat.title')}</div>
+            <div className="chat__title">💬 Interview Chat</div>
             <button
               onClick={() => setIsChatMinimized(!isChatMinimized)}
               className="chat__minimize"
