@@ -379,6 +379,13 @@ html[data-theme="dark"] .topbar {
   color: var(--text);
 }
 
+.logo__img {
+  width: 32px;
+  height: 32px;
+  display: block;
+  flex-shrink: 0;
+}
+
 .logo__mark {
   width: 28px;
   height: 28px;

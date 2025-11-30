@@ -172,7 +172,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
       <div className="auth-box">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="logo-icon">🎯</span>
+            <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo-icon" />
             <h1>{t('app.title')}</h1>
           </div>
         </div>

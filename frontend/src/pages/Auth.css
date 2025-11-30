@@ -53,7 +53,9 @@
 }
 
 .logo-icon {
-  font-size: 40px;
+  width: 48px;
+  height: 48px;
+  display: block;
   animation: pulse 2s ease-in-out infinite;
 }
 
