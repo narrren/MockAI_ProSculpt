@@ -51,7 +51,7 @@ const PersonalitySelector = ({ apiUrl, onPersonalityChange }) => {
             className={`personality__card ${selected === personality.id ? 'personality__card--selected' : ''}`}
             onClick={() => handleChange(personality.id)}
           >
-            <div style={{ fontSize: '24px', marginBottom: 'var(--space-1)' }}>
+            <div style={{ fontSize: '20px', marginBottom: 'var(--space-1)' }}>
               {personality.id === 'tough' && '🔥'}
               {personality.id === 'friendly' && '😊'}
               {personality.id === 'rapid-fire' && '⚡'}
