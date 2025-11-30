@@ -12,7 +12,7 @@ from interview_session import InterviewSession, active_sessions
 from analytics import AnalyticsEngine
 from personalities import get_personality_prompt, get_personality_info, list_personalities
 from code_revision import CodeRevision
-from database import init_db, get_db, User, InterviewSession as DBSession, ResumeData, Leaderboard
+from database import init_db, get_db, User, InterviewSession as DBSession, ResumeData, Leaderboard, UserStreak
 from resume_parser import ResumeParser
 from system_design import SystemDesignAnalyzer
 from multi_file_editor import MultiFileEditor
@@ -522,14 +522,14 @@ async def analyze_system_design(request: SystemDesignRequest):
     return result
 
 
-@app.post("/multi-file/create")
+@app.post("/multi-file/create/{session_id}")
 async def create_multi_file_project(request: MultiFileProjectRequest, session_id: str):
     """Create a multi-file code project"""
     result = multi_file_editor.create_project(session_id, request.files)
     return result
 
 
-@app.post("/multi-file/execute")
+@app.post("/multi-file/execute/{session_id}")
 async def execute_multi_file_project(session_id: str, entry_file: str, language: str):
     """Execute a multi-file project"""
     result = multi_file_editor.execute_project(session_id, entry_file, language)
@@ -543,14 +543,14 @@ async def get_file_tree(session_id: str):
     return {"file_tree": tree}
 
 
-@app.post("/multi-file/update")
+@app.post("/multi-file/update/{session_id}")
 async def update_file(session_id: str, file_path: str, content: str):
     """Update a file in the project"""
     result = multi_file_editor.update_file(session_id, file_path, content)
     return result
 
 
-@app.post("/realtime-feedback/check")
+@app.post("/realtime-feedback/check/{session_id}")
 async def check_realtime_feedback(request: RealtimeCodeCheckRequest, session_id: str):
     """Check code for real-time feedback"""
     result = realtime_feedback.check_code(
