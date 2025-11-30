@@ -126,7 +126,10 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
         <div className="auth-header">
           <div className="auth-logo">
             <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo-icon" />
-            <h1>{t('app.title')}</h1>
+            <div>
+              <h1>{t('app.title')}</h1>
+              <p className="auth-tagline">{t('app.tagline', 'Insight That Elevates')}</p>
+            </div>
           </div>
         </div>
         <h2 className="auth-subtitle">{t('auth.signup')}</h2>
