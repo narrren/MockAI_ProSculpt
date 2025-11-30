@@ -208,9 +208,19 @@ async def get_ai_status():
         # Test API connection
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(ai.model_name)
-        # Just check if model is accessible
-        test_response = model.generate_content("test", generation_config={"max_output_tokens": 1})
+        try:
+            model = genai.GenerativeModel(ai.model_name)
+            # Just check if model is accessible
+            test_response = model.generate_content("test", generation_config={"max_output_tokens": 1})
+        except Exception as test_error:
+            # Try fallback model
+            try:
+                print(f"[AI Status] Model {ai.model_name} failed, trying gemini-2.0-flash")
+                model = genai.GenerativeModel("gemini-2.0-flash")
+                test_response = model.generate_content("test", generation_config={"max_output_tokens": 1})
+                ai.model_name = "gemini-2.0-flash"
+            except Exception as fallback_error:
+                raise test_error
         
         return {
             "current_model": ai.model_name,
