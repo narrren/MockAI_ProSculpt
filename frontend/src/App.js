@@ -208,6 +208,11 @@ function App() {
   useEffect(() => {
     let hidden = false;
     let visibilityChange = '';
+    const startupTime = Date.now();
+    const startupGracePeriod = 10000; // 10 seconds grace period
+    let lastTabSwitchAlert = 0;
+    let lastBlurAlert = 0;
+    const alertCooldown = 10000; // 10 seconds between alerts
 
     if (typeof document.hidden !== 'undefined') {
       hidden = 'hidden';
@@ -225,10 +230,27 @@ function App() {
 
     const handleVisibilityChange = () => {
       if (document[hidden]) {
+        const now = Date.now();
+        // Don't alert during startup or if alerts disabled
+        if (now - startupTime < startupGracePeriod || !alertsEnabledRef.current) {
+          return;
+        }
+        
+        // Cooldown check
+        if (now - lastTabSwitchAlert < alertCooldown) {
+          return;
+        }
+        
         setTabSwitchCount(prev => prev + 1);
+        lastTabSwitchAlert = now;
         const alertMsg = 'ALERT: Tab switched or window hidden!';
         setAlerts(prev => [...prev, alertMsg]);
-        setFlashAlerts(prev => [...prev, alertMsg]);
+        
+        // Only flash if alerts enabled
+        if (alertsEnabledRef.current) {
+          setFlashAlerts(prev => [...prev, alertMsg]);
+        }
+        
         // Report to backend
         axios.post(`${API_URL}/report_violation`, {
           type: 'tab_switch',
@@ -239,12 +261,31 @@ function App() {
     };
 
     const handleBlur = () => {
+      const now = Date.now();
+      // Don't alert during startup or if alerts disabled
+      if (now - startupTime < startupGracePeriod || !alertsEnabledRef.current) {
+        return;
+      }
+      
       setWindowBlurCount(prev => prev + 1);
-      const timeSinceLastFocus = Date.now() - lastFocusTimeRef.current;
-      if (timeSinceLastFocus > 1000) { // Only alert if blurred for more than 1 second
+      const timeSinceLastFocus = now - lastFocusTimeRef.current;
+      
+      // Only alert if blurred for more than 2 seconds (increased from 1)
+      if (timeSinceLastFocus > 2000) {
+        // Cooldown check
+        if (now - lastBlurAlert < alertCooldown) {
+          return;
+        }
+        
+        lastBlurAlert = now;
         const alertMsg = 'ALERT: Window lost focus!';
         setAlerts(prev => [...prev, alertMsg]);
-        setFlashAlerts(prev => [...prev, alertMsg]);
+        
+        // Only flash if alerts enabled
+        if (alertsEnabledRef.current) {
+          setFlashAlerts(prev => [...prev, alertMsg]);
+        }
+        
         // Report to backend
         axios.post(`${API_URL}/report_violation`, {
           type: 'window_blur',

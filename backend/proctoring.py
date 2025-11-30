@@ -29,15 +29,21 @@ class Proctor:
             if self.face_cascade.empty():
                 print("Warning: Could not load face cascade classifier")
         self.last_face_detected = time.time()
-        self.alert_cooldown = 5.0  # Increased to 5 seconds before showing alert again
+        self.alert_cooldown = 10.0  # Increased to 10 seconds before showing alert again
         self.last_alert_time = {}  # Track last alert time per type
         self.face_detection_count = 0  # Track successful face detections
+        self.startup_time = time.time()  # Track when proctor was initialized
+        self.startup_grace_period = 15.0  # Don't alert for first 15 seconds
 
     def analyze_frame(self, frame):
         alerts = []
         h, w, _ = frame.shape
         w_frame = w  # Store frame width for calculations
         current_time = time.time()
+        
+        # Don't alert during startup grace period
+        if current_time - self.startup_time < self.startup_grace_period:
+            return alerts
         
         if not self.mediapipe_available:
             # Fallback to basic OpenCV face detection with head movement detection
@@ -162,9 +168,13 @@ class Proctor:
             right_lower = face_landmarks.landmark[374].y
             right_eye_open = abs(right_lower - right_upper)
             
-            # Check if eyes are closed
-            if left_eye_open < 0.002 or right_eye_open < 0.002:
-                alerts.append("WARNING: Eyes closed")
+            # Check if eyes are closed (with cooldown and higher threshold)
+            # Increased threshold from 0.002 to 0.005 to reduce false positives
+            if (left_eye_open < 0.005 or right_eye_open < 0.005):
+                alert_key = "eyes_closed"
+                if alert_key not in self.last_alert_time or (current_time - self.last_alert_time[alert_key]) > self.alert_cooldown:
+                    alerts.append("WARNING: Eyes closed")
+                    self.last_alert_time[alert_key] = current_time
 
             # 3. Face distance check (too close or too far)
             # Use face bounding box size as proxy for distance
@@ -175,12 +185,18 @@ class Proctor:
             face_height = np.max(face_landmarks_array[:, 1]) - np.min(face_landmarks_array[:, 1])
             face_size = (face_width + face_height) / 2
             
-            # Normalize by frame size
+            # Normalize by frame size (with cooldown and adjusted thresholds)
             normalized_size = face_size / max(w, h)
-            if normalized_size < 0.15:
-                alerts.append("WARNING: Face too far from camera")
-            elif normalized_size > 0.5:
-                alerts.append("WARNING: Face too close to camera")
+            if normalized_size < 0.10:  # More lenient - only alert if very far
+                alert_key = "face_too_far"
+                if alert_key not in self.last_alert_time or (current_time - self.last_alert_time[alert_key]) > self.alert_cooldown:
+                    alerts.append("WARNING: Face too far from camera")
+                    self.last_alert_time[alert_key] = current_time
+            elif normalized_size > 0.6:  # More lenient - only alert if very close
+                alert_key = "face_too_close"
+                if alert_key not in self.last_alert_time or (current_time - self.last_alert_time[alert_key]) > self.alert_cooldown:
+                    alerts.append("WARNING: Face too close to camera")
+                    self.last_alert_time[alert_key] = current_time
 
         return alerts
 
