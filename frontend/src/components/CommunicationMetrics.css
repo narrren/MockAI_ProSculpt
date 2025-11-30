@@ -1,104 +1,42 @@
-.communication-metrics {
+.metrics {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.metrics__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.metrics__card {
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-sm);
-  margin-top: var(--space-4);
-}
-
-.communication-metrics__title {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 var(--space-4) 0;
-}
-
-.communication-metrics__grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-
-.communication-metrics__card {
-  padding: var(--space-4);
-  background: var(--surface-2);
   border-radius: var(--radius-md);
-  border: 1px solid var(--gray-200);
 }
 
-.communication-metrics__label {
+.metrics__label {
   font-size: var(--fs-sm);
   color: var(--text-muted);
   margin-bottom: var(--space-2);
 }
 
-.communication-metrics__value {
+.metrics__value {
   font-size: var(--fs-2xl);
   font-weight: 700;
-  margin-bottom: var(--space-2);
-}
-
-.communication-metrics__bar {
-  width: 100%;
-  height: 8px;
-  background: var(--gray-200);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.communication-metrics__bar-fill {
-  height: 100%;
-  border-radius: var(--radius-full);
-  transition: width 0.5s ease;
-}
-
-.communication-metrics__details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--gray-200);
-}
-
-.communication-metrics__detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--fs-sm);
-}
-
-.communication-metrics__detail-label {
-  color: var(--text-muted);
-}
-
-.communication-metrics__detail-value {
-  font-weight: 600;
   color: var(--text);
 }
 
-.communication-metrics__star-badge {
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: rgba(22, 163, 74, 0.1);
-  border: 1px solid rgba(22, 163, 74, 0.3);
-  border-radius: var(--radius-md);
-  color: #16a34a;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  text-align: center;
-}
-
-.communication-metrics.loading {
-  text-align: center;
-  padding: var(--space-8);
+.metrics__sub {
+  font-size: var(--fs-xs);
   color: var(--text-muted);
+  margin-top: var(--space-1);
 }
 
-@media (max-width: 768px) {
-  .communication-metrics__grid {
-    grid-template-columns: 1fr;
-  }
+.metrics__chart {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
 }
-

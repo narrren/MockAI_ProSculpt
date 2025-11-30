@@ -1,12 +1,10 @@
-/* ====== Code Editor ====== */
 .editor {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background: var(--surface);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  gap: 10px;
+}
+
+.editor .card {
   overflow: hidden;
 }
 
@@ -14,174 +12,58 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
+  padding: 10px;
   background: var(--surface-2);
   border-bottom: 1px solid var(--gray-200);
 }
 
-.editor__title {
-  font-weight: 600;
-  font-size: var(--fs-base);
+.editor__pane {
+  height: 440px;
+  min-height: 440px;
+}
+
+.editor__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.output {
+  background: var(--bg);
+  border: 1px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  min-height: 88px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: var(--fs-sm);
   color: var(--text);
-  margin: 0;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.output--success {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.05);
+}
+
+.output--error {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.05);
 }
 
 .editor__lang-select {
   padding: 6px 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--gray-300);
-  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   font-size: var(--fs-sm);
-  cursor: pointer;
-  outline: none;
-  transition: border 0.15s ease, box-shadow 0.2s ease;
 }
 
 .editor__lang-select:focus {
   border-color: var(--brand-500);
   box-shadow: var(--ring);
+  outline: none;
 }
-
-.editor__actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.editor__pane {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  background: var(--gray-900);
-}
-
-.editor__output {
-  height: 200px;
-  background: var(--surface);
-  border-top: 1px solid var(--gray-200);
-  padding: 16px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.editor__output-title {
-  font-weight: 600;
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-  margin: 0 0 8px 0;
-}
-
-.editor__output-content {
-  font-family: 'SF Mono', 'Monaco', monospace;
-  font-size: var(--fs-sm);
-  line-height: var(--lh-relaxed);
-  color: var(--text);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  margin: 0;
-}
-
-.editor__output-content--error {
-  color: #dc2626;
-}
-
-.editor__output-content--success {
-  color: #16a34a;
-}
-
-/* Evaluation Result */
-.editor__evaluation {
-  margin-bottom: 16px;
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  border: 2px solid;
-}
-
-.editor__evaluation--correct {
-  background: rgba(22, 163, 74, 0.1);
-  border-color: #16a34a;
-}
-
-.editor__evaluation--incorrect {
-  background: rgba(220, 38, 38, 0.1);
-  border-color: #dc2626;
-}
-
-.editor__evaluation-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.editor__evaluation-icon {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.editor__evaluation--correct .editor__evaluation-icon {
-  color: #16a34a;
-}
-
-.editor__evaluation--incorrect .editor__evaluation-icon {
-  color: #dc2626;
-}
-
-.editor__evaluation-score {
-  margin-left: auto;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.editor__evaluation-feedback {
-  color: var(--text);
-  font-size: var(--fs-sm);
-  line-height: var(--lh-normal);
-  margin-bottom: 12px;
-}
-
-.editor__evaluation-list {
-  margin: 8px 0 0 0;
-  padding-left: 20px;
-  color: var(--text);
-  font-size: var(--fs-sm);
-}
-
-.editor__evaluation-list li {
-  margin-bottom: 4px;
-}
-
-.editor__evaluation-strengths {
-  margin-top: 12px;
-}
-
-.editor__evaluation-strengths-title {
-  font-weight: 600;
-  color: #16a34a;
-  margin-bottom: 6px;
-  font-size: var(--fs-sm);
-}
-
-.editor__evaluation-improvements {
-  margin-top: 12px;
-}
-
-.editor__evaluation-improvements-title {
-  font-weight: 600;
-  color: #d97706;
-  margin-bottom: 6px;
-  font-size: var(--fs-sm);
-}
-
-/* Monaco Editor overrides */
-.editor__pane .monaco-editor {
-  border-radius: 0;
-}
-
-.editor__pane .monaco-editor .margin {
-  background: var(--gray-900) !important;
-}
-

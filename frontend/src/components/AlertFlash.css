@@ -1,87 +1,57 @@
-/* ====== Alert Flash ====== */
-.alert-flash-container {
+.flash {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 10000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-5);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.55);
+  z-index: 70;
+  backdrop-filter: blur(4px);
 }
 
-.alert-flash {
-  background: rgba(220, 38, 38, 0.95);
-  color: white;
-  padding: var(--space-8) var(--space-12);
+.flash__panel {
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  padding: 22px;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  min-width: 400px;
-  max-width: 600px;
+  box-shadow: var(--shadow-lg);
+  max-width: 480px;
+  width: 90%;
   text-align: center;
-  pointer-events: auto;
-  animation: flashIn 0.3s ease-out, flashOut 0.3s ease-in 4.7s;
-  transform-origin: center;
-  backdrop-filter: blur(8px);
-}
-
-.alert-flash-icon {
-  font-size: 36px;
-  flex-shrink: 0;
-}
-
-.alert-flash-text {
-  flex: 1;
-  word-wrap: break-word;
+  animation: flashIn 0.3s ease-out;
 }
 
 @keyframes flashIn {
-  0% {
+  from {
     opacity: 0;
-    transform: scale(0.8) translateY(-20px);
+    transform: scale(0.9) translateY(-10px);
   }
-  50% {
-    transform: scale(1.05) translateY(0);
-  }
-  100% {
+  to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
-@keyframes flashOut {
-  0% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.8) translateY(-20px);
-  }
+.flash__message {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-4);
 }
 
-.alert-flash.hide {
-  animation: flashOut 0.3s ease-in forwards;
+.flash__message--danger {
+  color: #dc2626;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .alert-flash {
-    min-width: 90%;
-    padding: var(--space-5) var(--space-8);
-    font-size: var(--fs-xl);
-  }
-  
-  .alert-flash-icon {
-    font-size: 28px;
+.flash__message--warning {
+  color: #d97706;
+}
+
+.flash__message--info {
+  color: #0284c7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash__panel {
+    animation: none;
   }
 }

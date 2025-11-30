@@ -1,184 +1,117 @@
-.career-blueprint {
+.blueprint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.blueprint__section {
+  padding: var(--space-6);
   background: var(--surface);
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-lg);
-  max-height: 600px;
-  overflow-y: auto;
+  border-radius: var(--radius-lg);
 }
 
-.career-blueprint__header {
+.blueprint__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+}
+
+.blueprint__list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-6);
-  padding-bottom: var(--space-4);
-  border-bottom: 2px solid var(--gray-200);
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.career-blueprint__title {
-  font-size: var(--fs-2xl);
+.blueprint__item {
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--brand-500);
+}
+
+.blueprint__item--weakness {
+  border-left-color: #ef4444;
+}
+
+.blueprint__item-label {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  margin-bottom: var(--space-1);
+}
+
+.blueprint__item-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.blueprint__compatibility {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--brand-50), var(--accent-50));
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+}
+
+html[data-theme="dark"] .blueprint__compatibility {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(20, 184, 166, 0.15));
+}
+
+.blueprint__compatibility-score {
+  font-size: var(--fs-3xl);
   font-weight: 700;
   color: var(--text);
-  margin: 0;
 }
 
-.career-blueprint__compatibility {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-1);
-}
-
-.career-blueprint__role {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--brand-500);
-}
-
-.career-blueprint__score {
+.blueprint__compatibility-label {
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }
 
-.career-blueprint__section {
-  margin-bottom: var(--space-6);
+.blueprint__timeline {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
 }
 
-.career-blueprint__section-title {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.career-blueprint__list {
+.blueprint__timeline-item {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.career-blueprint__item {
-  display: flex;
-  align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
+  border-left: 2px solid var(--gray-300);
+  margin-left: var(--space-4);
 }
 
-.career-blueprint__item--strength {
-  border-left: 4px solid #16a34a;
+.blueprint__timeline-item:last-child {
+  border-left: none;
 }
 
-.career-blueprint__item--weakness {
-  border-left: 4px solid #d97706;
-}
-
-.career-blueprint__item-name {
-  flex: 1;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.career-blueprint__item-score {
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.career-blueprint__item-gap {
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-}
-
-.career-blueprint__recommendations {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.career-blueprint__recommendation {
-  padding: var(--space-4);
-  background: var(--surface-2);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-}
-
-.career-blueprint__rec-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-2);
-}
-
-.career-blueprint__rec-title {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.career-blueprint__rec-priority {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.career-blueprint__rec-priority--high {
-  background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
-}
-
-.career-blueprint__rec-priority--medium {
-  background: rgba(217, 119, 6, 0.1);
-  color: #d97706;
-}
-
-.career-blueprint__rec-details {
-  display: flex;
-  gap: var(--space-4);
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-}
-
-.career-blueprint__footer {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 2px solid var(--gray-200);
-  text-align: center;
-}
-
-.career-blueprint__timeline {
-  font-size: var(--fs-base);
-  color: var(--text);
-  margin: 0 0 var(--space-2) 0;
-}
-
-.career-blueprint__assessment {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--brand-500);
-  margin: 0;
-}
-
-.career-blueprint.loading,
-.career-blueprint.error {
-  text-align: center;
-  padding: var(--space-8);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--gray-200);
-  border-top-color: var(--brand-500);
+.blueprint__timeline-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto var(--space-4);
+  background: var(--brand-500);
+  margin-left: -19px;
+  margin-top: 4px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.blueprint__timeline-content {
+  flex: 1;
 }
 
+.blueprint__timeline-title {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  margin-bottom: var(--space-1);
+}
+
+.blueprint__timeline-desc {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}

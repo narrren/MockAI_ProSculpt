@@ -1,68 +1,46 @@
-.integrity-score {
+.integrity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.integrity__main {
+  text-align: center;
+  padding: var(--space-8);
   background: var(--surface);
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-sm);
-  margin-top: var(--space-4);
+  border-radius: var(--radius-xl);
 }
 
-.integrity-score__header {
-  text-align: center;
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
-  border-bottom: 2px solid var(--gray-200);
-}
-
-.integrity-score__title {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.integrity-score__main {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--space-1);
+.integrity__score {
+  font-size: var(--fs-3xl);
+  font-weight: 700;
   margin-bottom: var(--space-2);
 }
 
-.integrity-score__value {
-  font-size: var(--fs-4xl);
-  font-weight: 700;
+.integrity__score--high {
+  color: #10b981;
 }
 
-.integrity-score__max {
-  font-size: var(--fs-xl);
+.integrity__score--medium {
+  color: #f59e0b;
+}
+
+.integrity__score--low {
+  color: #ef4444;
+}
+
+.integrity__label {
+  font-size: var(--fs-lg);
   color: var(--text-muted);
 }
 
-.integrity-score__label {
-  font-size: var(--fs-base);
-  font-weight: 600;
-  color: var(--text-muted);
+.integrity__breakdown {
+  display: grid;
+  gap: var(--space-3);
 }
 
-.integrity-score__breakdown {
-  margin-bottom: var(--space-4);
-}
-
-.integrity-score__breakdown-title {
-  font-size: var(--fs-base);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.integrity-score__breakdown-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.integrity-score__breakdown-item {
+.integrity__item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -71,30 +49,13 @@
   border-radius: var(--radius-md);
 }
 
-.integrity-score__breakdown-label {
+.integrity__item-label {
   font-size: var(--fs-sm);
   color: var(--text);
 }
 
-.integrity-score__breakdown-value {
-  font-size: var(--fs-base);
+.integrity__item-value {
   font-weight: 600;
-}
-
-.integrity-score__footer {
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--gray-200);
-  text-align: center;
-}
-
-.integrity-score__stat {
   font-size: var(--fs-sm);
-  color: var(--text-muted);
+  color: var(--text);
 }
-
-.integrity-score.loading {
-  text-align: center;
-  padding: var(--space-8);
-  color: var(--text-muted);
-}
-

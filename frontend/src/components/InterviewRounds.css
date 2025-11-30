@@ -1,87 +1,78 @@
-.interview-rounds {
+.rounds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rounds__tracker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--space-4);
 }
 
-.interview-rounds__title {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 var(--space-4) 0;
-}
-
-.interview-rounds__list {
+.rounds__item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.interview-rounds__item {
-  display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  min-width: 100px;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  border: 2px solid var(--gray-200);
-  background: var(--surface-2);
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.interview-rounds__item--active {
-  border-color: var(--brand-500);
-  background: rgba(99, 102, 241, 0.1);
-  cursor: pointer;
+.rounds__item--active {
+  background: var(--brand-50);
+  border: 2px solid var(--brand-500);
 }
 
-.interview-rounds__item--completed {
-  border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.1);
-  cursor: pointer;
+html[data-theme="dark"] .rounds__item--active {
+  background: rgba(99, 102, 241, 0.15);
 }
 
-.interview-rounds__item--pending {
-  opacity: 0.6;
+.rounds__item--completed {
+  background: var(--accent-50);
+  border: 1px solid var(--accent-200);
 }
 
-.interview-rounds__item-number {
-  width: 36px;
-  height: 36px;
+html[data-theme="dark"] .rounds__item--completed {
+  background: rgba(20, 184, 166, 0.15);
+}
+
+.rounds__number {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--gray-200);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: var(--text);
-  flex-shrink: 0;
-}
-
-.interview-rounds__item--active .interview-rounds__item-number {
-  background: var(--brand-500);
-  color: white;
-}
-
-.interview-rounds__item--completed .interview-rounds__item-number {
-  background: #16a34a;
-  color: white;
-}
-
-.interview-rounds__item-content {
-  flex: 1;
-}
-
-.interview-rounds__item-name {
+  display: grid;
+  place-items: center;
   font-weight: 600;
+  font-size: var(--fs-sm);
+  background: var(--gray-200);
   color: var(--text);
-  margin-bottom: var(--space-1);
 }
 
-.interview-rounds__item-status {
+.rounds__item--active .rounds__number {
+  background: var(--brand-500);
+  color: #fff;
+}
+
+.rounds__item--completed .rounds__number {
+  background: var(--accent-500);
+  color: #fff;
+}
+
+.rounds__name {
   font-size: var(--fs-xs);
   color: var(--text-muted);
+  text-align: center;
 }
 
+.rounds__item--active .rounds__name {
+  color: var(--text);
+  font-weight: 600;
+}

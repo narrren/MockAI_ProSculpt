@@ -1,64 +1,64 @@
-.personality-selector {
-  margin-bottom: var(--space-6);
+.personality {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.personality-selector__label {
-  display: block;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: var(--space-3);
-}
-
-.personality-selector__grid {
+.personality__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
 }
 
-.personality-selector__card {
+.personality__card {
+  padding: var(--space-5);
   background: var(--surface);
   border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
+  transition: all 0.2s;
 }
 
-.personality-selector__card:hover {
-  border-color: var(--brand-500);
-  transform: translateY(-2px);
+.personality__card:hover {
+  border-color: var(--brand-300);
   box-shadow: var(--shadow-md);
 }
 
-.personality-selector__card--active {
+.personality__card--selected {
   border-color: var(--brand-500);
-  background: var(--gray-50);
-  box-shadow: var(--shadow-sm);
+  background: var(--brand-50);
+  box-shadow: var(--shadow-md);
 }
 
-.personality-selector__icon {
-  font-size: 32px;
+html[data-theme="dark"] .personality__card--selected {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.personality__name {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
   margin-bottom: var(--space-2);
 }
 
-.personality-selector__name {
+.personality__desc {
   font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: var(--space-1);
+  color: var(--text-muted);
+  line-height: var(--lh-n);
 }
 
-.personality-selector__description {
+.personality__badge {
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: 4px 8px;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  border-radius: var(--radius-sm);
   font-size: var(--fs-xs);
-  color: var(--text-muted);
-  line-height: var(--lh-normal);
+  font-weight: 600;
 }
 
-.personality-selector.loading {
-  text-align: center;
-  padding: var(--space-4);
-  color: var(--text-muted);
+html[data-theme="dark"] .personality__badge {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--brand-300);
 }
-
