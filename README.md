@@ -4,7 +4,7 @@ A local, low-cost AI-powered technical interview platform with real-time proctor
 
 ## 🎯 Features
 
-- **AI-Powered Interviewer**: Uses Ollama with Llama 3 for intelligent, contextual interviews
+- **AI-Powered Interviewer**: Uses Google Gemini for intelligent, contextual interviews
 - **Real-Time Proctoring**: MediaPipe + OpenCV for face detection, gaze tracking, and violation alerts
 - **Code Execution Engine**: Safe Python code execution with timeout protection
 - **Modern UI**: React-based interface with Monaco code editor (VS Code-like experience)
@@ -14,7 +14,7 @@ A local, low-cost AI-powered technical interview platform with real-time proctor
 
 ### Backend
 - **FastAPI**: High-performance async API server
-- **Ollama**: Local LLM (Llama 3) for AI interviewer
+- **Google Gemini**: Cloud-based AI model for interviewer responses
 - **MediaPipe**: Face detection and tracking
 - **OpenCV**: Computer vision processing
 - **Python 3.10+**: Backend language
@@ -31,19 +31,17 @@ Before you begin, ensure you have:
 
 1. **Python 3.10+** installed
 2. **Node.js 16+** and npm installed
-3. **Ollama** installed ([Download here](https://ollama.com))
+3. **Google Gemini API Key** ([Get it here](https://makersuite.google.com/app/apikey))
 4. **Webcam** for proctoring features
 
 ## 🚀 Setup Instructions
 
-### Step 1: Install Ollama and Download Llama 3
+### Step 1: Get Google Gemini API Key
 
-1. Download and install Ollama from [ollama.com](https://ollama.com)
-2. Open a terminal and run:
-   ```bash
-   ollama run llama3
-   ```
-   This will download the Llama 3 model (~4GB). Keep this terminal running in the background.
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy your API key
 
 ### Step 2: Backend Setup
 
@@ -82,15 +80,22 @@ Before you begin, ensure you have:
 
 ## 🏃 Running the Application
 
-You need to run three services simultaneously:
+You need to run two services simultaneously:
 
-### Terminal 1: Ollama (AI Model)
+### Step 1: Configure API Key
+
+Create a `.env` file in the `backend` directory:
 ```bash
-ollama run llama3
+cd backend
+echo GOOGLE_API_KEY=your_api_key_here > .env
 ```
-Keep this running in the background.
 
-### Terminal 2: Backend Server
+Or set it as an environment variable:
+- **Windows PowerShell**: `$env:GOOGLE_API_KEY="your_api_key_here"`
+- **Windows CMD**: `set GOOGLE_API_KEY=your_api_key_here`
+- **Linux/Mac**: `export GOOGLE_API_KEY=your_api_key_here`
+
+### Terminal 1: Backend Server
 ```bash
 cd backend
 # Activate virtual environment if not already active
@@ -104,7 +109,7 @@ uvicorn main:app --reload --port 8001
 ```
 Then update `frontend/src/App.js` to use the new port.
 
-### Terminal 3: Frontend Server
+### Terminal 2: Frontend Server
 ```bash
 cd frontend
 npm start
@@ -153,7 +158,7 @@ MockAI_ProSculpt/
 ├── backend/
 │   ├── main.py            # FastAPI server
 │   ├── proctoring.py      # Face/eye detection logic
-│   ├── ai_interviewer.py  # Ollama integration
+│   ├── ai_interviewer.py  # Google Gemini integration
 │   ├── code_engine.py     # Code execution engine
 │   └── requirements.txt   # Python dependencies
 ├── frontend/
@@ -176,8 +181,12 @@ MockAI_ProSculpt/
 
 Edit `backend/ai_interviewer.py`:
 ```python
-self.model = "mistral"  # or any other Ollama model
+self.model_name = "gemini-pro"  # or "gemini-pro-vision" for multimodal
 ```
+
+Available Gemini models:
+- `gemini-pro`: Text-only model (default)
+- `gemini-pro-vision`: Multimodal model (text + images)
 
 ### Adjusting Proctoring Sensitivity
 
@@ -196,10 +205,11 @@ Edit `backend/proctoring.py` to modify thresholds:
 
 ## 🐛 Troubleshooting
 
-### Ollama Connection Error
-- Ensure Ollama is running: `ollama list` should show installed models
-- Verify Llama 3 is installed: `ollama run llama3`
-- Check if the model name matches in `ai_interviewer.py`
+### Google Gemini API Error
+- Ensure `GOOGLE_API_KEY` is set in environment variables or `.env` file
+- Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- Check API quota and billing in Google Cloud Console
+- Verify internet connection (Gemini requires internet access)
 
 ### Webcam Not Working
 - Grant browser camera permissions

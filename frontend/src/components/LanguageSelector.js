@@ -1,5 +1,6 @@
 import React from 'react';
 import { getLanguage, setLanguage, t } from '../i18n/languages';
+import './LanguageSelector.css';
 
 const LanguageSelector = ({ onLanguageChange }) => {
   const currentLang = getLanguage();
@@ -20,47 +21,53 @@ const LanguageSelector = ({ onLanguageChange }) => {
     window.location.reload();
   };
 
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div style={{
-      position: 'relative',
-      display: 'inline-block'
-    }}>
-      <select
-        value={currentLang}
-        onChange={(e) => handleLanguageChange(e.target.value)}
-        style={{
-          padding: '8px 35px 8px 12px',
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(10px)',
-          color: 'white',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '500',
-          appearance: 'none',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 10px center',
-          paddingRight: '40px',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'rgba(255, 255, 255, 0.25)';
-          e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(255, 255, 255, 0.15)';
-          e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        }}
+    <div className="lang-selector" ref={dropdownRef}>
+      <button
+        className="lang-selector__button"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        {languages.map(lang => (
-          <option key={lang.code} value={lang.code}>
-            {lang.flag} {lang.name}
-          </option>
-        ))}
-      </select>
+        <span className="lang-selector__flag">
+          {languages.find(l => l.code === currentLang)?.flag}
+        </span>
+        <span>{languages.find(l => l.code === currentLang)?.name}</span>
+      </button>
+      {isOpen && (
+        <div className="lang-selector__dropdown">
+          {languages.map(lang => (
+            <div
+              key={lang.code}
+              className={`lang-selector__option ${lang.code === currentLang ? 'lang-selector__option--active' : ''}`}
+              onClick={() => {
+                handleLanguageChange(lang.code);
+                setIsOpen(false);
+              }}
+            >
+              <span className="lang-selector__option-flag">{lang.flag}</span>
+              <span className="lang-selector__option-name">{lang.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

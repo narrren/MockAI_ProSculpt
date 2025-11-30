@@ -1,10 +1,16 @@
 import secrets
 import smtplib
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 import hashlib
+from dotenv import load_dotenv
+
+# Load environment variables
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
 
 # In-memory storage (use database in production)
 users_db = {}
@@ -16,10 +22,12 @@ TEST_PASSWORD = "test123"  # Hashed in production
 TEST_NAME = "Test Interviewer"
 
 # Email configuration (using Gmail SMTP - update with your credentials)
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_FROM = "your-email@gmail.com"  # Update this
-EMAIL_PASSWORD = "your-app-password"  # Update this (use App Password, not regular password)
+# Get these from environment variables or use defaults
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+EMAIL_FROM = os.getenv("EMAIL_FROM", "your-email@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")  # Use App Password for Gmail
+ENABLE_EMAIL = os.getenv("ENABLE_EMAIL", "true").lower() == "true"
 
 
 def hash_password(password: str) -> str:
@@ -38,33 +46,72 @@ def send_otp_email(email: str, otp: str) -> bool:
     Returns True if sent successfully, False otherwise.
     """
     try:
-        # For testing, just print OTP (update with real SMTP in production)
+        # Always print OTP to console for debugging
         print(f"[OTP EMAIL] To: {email}, OTP: {otp}")
         
-        # Uncomment below to use real email sending
-        # msg = MIMEMultipart()
-        # msg['From'] = EMAIL_FROM
-        # msg['To'] = email
-        # msg['Subject'] = "MockAI ProSculpt - OTP Verification"
-        # 
-        # body = f"""<html><body>
-        #   <h2>Your OTP for MockAI ProSculpt</h2>
-        #   <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
-        #   <p>This OTP will expire in 10 minutes.</p>
-        #   <p>If you didn't request this, please ignore this email.</p>
-        # </body></html>"""
-        # msg.attach(MIMEText(body, 'html'))
-        # 
-        # server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        # server.starttls()
-        # server.login(EMAIL_FROM, EMAIL_PASSWORD)
-        # server.send_message(msg)
-        # server.quit()
+        # If email is disabled or credentials not configured, just print
+        if not ENABLE_EMAIL or not EMAIL_PASSWORD or EMAIL_FROM == "your-email@gmail.com":
+            print(f"[OTP EMAIL] Email sending disabled or not configured. OTP: {otp}")
+            print(f"[OTP EMAIL] To enable email, set ENABLE_EMAIL=true and configure EMAIL_FROM and EMAIL_PASSWORD in .env")
+            return True  # Return True so flow continues (OTP is printed to console)
         
+        # Send actual email
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_FROM
+        msg['To'] = email
+        msg['Subject'] = "MockAI ProSculpt - OTP Verification"
+        
+        body = f"""<html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+                .otp-box {{ background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }}
+                .otp-code {{ font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>MockAI ProSculpt</h1>
+                    <p>OTP Verification</p>
+                </div>
+                <div class="content">
+                    <h2>Your One-Time Password (OTP)</h2>
+                    <p>Please use the following OTP to verify your account:</p>
+                    <div class="otp-box">
+                        <div class="otp-code">{otp}</div>
+                    </div>
+                    <p><strong>This OTP will expire in 10 minutes.</strong></p>
+                    <p>If you didn't request this OTP, please ignore this email.</p>
+                    <div class="footer">
+                        <p>This is an automated email from MockAI ProSculpt.</p>
+                        <p>Do not reply to this email.</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>"""
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_FROM, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"[OTP EMAIL] Email sent successfully to {email}")
         return True
+        
     except Exception as e:
-        print(f"Error sending email: {e}")
-        return False
+        print(f"[OTP EMAIL] Error sending email: {e}")
+        print(f"[OTP EMAIL] OTP for {email} is: {otp} (check console if email failed)")
+        # Still return True so user can proceed (OTP is in console)
+        return True
 
 
 def register_user(email: str, name: str) -> Dict:

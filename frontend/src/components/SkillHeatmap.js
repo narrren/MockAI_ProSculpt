@@ -1,0 +1,80 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './SkillHeatmap.css';
+
+const SkillHeatmap = ({ apiUrl, userId }) => {
+  const [skills, setSkills] = useState({
+    problem_solving: 0,
+    communication: 0,
+    coding_quality: 0,
+    conceptual_knowledge: 0,
+    behavioral_clarity: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchSkills = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/session/${userId}/skills`);
+        if (response.data.skills) {
+          setSkills(response.data.skills);
+        }
+      } catch (error) {
+        console.error('Error fetching skills:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSkills();
+    const interval = setInterval(fetchSkills, 5000); // Update every 5 seconds
+    return () => clearInterval(interval);
+  }, [apiUrl, userId]);
+
+  const getSkillColor = (score) => {
+    if (score >= 75) return '#16a34a'; // Green
+    if (score >= 50) return '#d97706'; // Orange
+    return '#dc2626'; // Red
+  };
+
+  const skillLabels = {
+    problem_solving: 'Problem Solving',
+    communication: 'Communication',
+    coding_quality: 'Coding Quality',
+    conceptual_knowledge: 'Conceptual Knowledge',
+    behavioral_clarity: 'Behavioral Clarity'
+  };
+
+  if (loading) {
+    return <div className="skill-heatmap loading">Loading skills...</div>;
+  }
+
+  return (
+    <div className="skill-heatmap">
+      <h3 className="skill-heatmap__title">Real-time Skill Assessment</h3>
+      <div className="skill-heatmap__grid">
+        {Object.entries(skills).map(([key, value]) => (
+          <div key={key} className="skill-heatmap__item">
+            <div className="skill-heatmap__label">{skillLabels[key]}</div>
+            <div className="skill-heatmap__bar-container">
+              <div
+                className="skill-heatmap__bar"
+                style={{
+                  width: `${value}%`,
+                  backgroundColor: getSkillColor(value)
+                }}
+              >
+                <span className="skill-heatmap__value">{Math.round(value)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default SkillHeatmap;
+

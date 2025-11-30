@@ -2,18 +2,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import { t } from '../i18n/languages';
+import './CodeEditor.css';
 
-const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true }) => {
-  const [code, setCode] = useState('# Write your Python code here\nprint("Hello, World!")');
+const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true, question = null, suggestedLanguage = 'python', onCodeChange }) => {
+  const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
+  const [evaluation, setEvaluation] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [language, setLanguage] = useState('python');
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [language, setLanguage] = useState(suggestedLanguage);
   const editorRef = useRef(null);
   const violationCountRef = useRef(0);
+
+  // Initialize code based on language
+  useEffect(() => {
+    const defaultCode = {
+      python: '# Write your Python code here\nprint("Hello, World!")',
+      javascript: '// Write your JavaScript code here\nconsole.log("Hello, World!");',
+      java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}',
+      cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}',
+      c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}'
+    };
+    if (!code || code.trim().length === 0) {
+      setCode(defaultCode[language] || defaultCode.python);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
+
+  // Update language when suggested language changes
+  useEffect(() => {
+    if (suggestedLanguage) {
+      setLanguage(suggestedLanguage);
+    }
+  }, [suggestedLanguage]);
 
   const runCode = async () => {
     setIsRunning(true);
     setOutput('Running...');
+    setEvaluation(null);
 
     try {
       const res = await axios.post(`${apiUrl}/run_code`, {
@@ -26,6 +52,34 @@ const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true }) => {
       setOutput(`Error: ${error.response?.data?.detail || error.message}`);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const evaluateCode = async () => {
+    if (!question) {
+      setOutput('No question available for evaluation');
+      return;
+    }
+
+    setIsEvaluating(true);
+    setEvaluation(null);
+
+    try {
+      const res = await axios.post(`${apiUrl}/evaluate_code`, {
+        code: code,
+        language: language,
+        question: question
+      });
+      setEvaluation(res.data);
+    } catch (error) {
+      console.error('Code evaluation error:', error);
+      setEvaluation({
+        status: 'error',
+        feedback: `Error: ${error.response?.data?.detail || error.message}`,
+        is_correct: false
+      });
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
@@ -188,70 +242,47 @@ const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true }) => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      background: '#1e1e1e'
-    }}>
-      <div style={{
-        padding: '10px',
-        background: '#2d2d2d',
-        borderBottom: '1px solid #555',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, color: 'white' }}>{t('code.title')}</h3>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            style={{
-              padding: '5px 10px',
-              background: '#1e1e1e',
-              color: 'white',
-              border: '1px solid #555',
-              borderRadius: '5px'
-            }}
-          >
-            <option value="python">Python</option>
-            <option value="javascript" disabled>JavaScript (Coming Soon)</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+    <div className="editor">
+      <div className="editor__toolbar">
+        <h3 className="editor__title">{t('code.title')}</h3>
+        <select
+          className="editor__lang-select"
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+        >
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+          <option value="c">C</option>
+        </select>
+        <div className="editor__actions">
           <button
+            className="btn btn--accent btn--sm"
             onClick={runCode}
             disabled={isRunning}
-            style={{
-              padding: '8px 20px',
-              background: isRunning ? '#555' : '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: isRunning ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
-            }}
           >
             {isRunning ? t('code.running') : `▶ ${t('code.run')}`}
           </button>
+          {question && (
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={evaluateCode}
+              disabled={isEvaluating || isRunning}
+            >
+              {isEvaluating ? 'Evaluating...' : '✓ Evaluate Code'}
+            </button>
+          )}
           <button
+            className="btn btn--ghost btn--sm"
             onClick={clearOutput}
-            style={{
-              padding: '8px 20px',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
           >
             {t('code.clear')}
           </button>
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div className="editor__pane">
         <Editor
           height="100%"
           defaultLanguage="python"
@@ -276,25 +307,47 @@ const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true }) => {
         />
       </div>
 
-      <div style={{
-        height: '200px',
-        background: '#1e1e1e',
-        borderTop: '2px solid #555',
-        padding: '15px',
-        overflowY: 'auto'
-      }}>
-        <div style={{
-          color: 'white',
-          fontFamily: 'monospace',
-          fontSize: '13px',
-          whiteSpace: 'pre-wrap',
-          wordWrap: 'break-word'
-        }}>
-          <strong style={{ color: '#4ec9b0' }}>{t('code.output')}</strong>
-          <pre style={{ margin: '10px 0 0 0', color: output.startsWith('Error') ? '#f48771' : '#d4d4d4' }}>
-            {output || t('code.noOutput')}
-          </pre>
-        </div>
+      <div className="editor__output">
+        {evaluation && (
+          <div className={`editor__evaluation ${evaluation.is_correct ? 'editor__evaluation--correct' : 'editor__evaluation--incorrect'}`}>
+            <div className="editor__evaluation-header">
+              <span className="editor__evaluation-icon">
+                {evaluation.is_correct ? '✓' : '✗'}
+              </span>
+              <strong>
+                {evaluation.is_correct ? 'Correct Solution' : 'Incorrect Solution'}
+              </strong>
+              {evaluation.score !== undefined && (
+                <span className="editor__evaluation-score">
+                  Score: {evaluation.score}/100
+                </span>
+              )}
+            </div>
+            <div className="editor__evaluation-feedback">
+              {evaluation.feedback}
+            </div>
+            {evaluation.strengths && evaluation.strengths.length > 0 && (
+              <div className="editor__evaluation-strengths">
+                <div className="editor__evaluation-strengths-title">Strengths:</div>
+                <ul className="editor__evaluation-list">
+                  {evaluation.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            )}
+            {evaluation.improvements && evaluation.improvements.length > 0 && (
+              <div className="editor__evaluation-improvements">
+                <div className="editor__evaluation-improvements-title">Improvements:</div>
+                <ul className="editor__evaluation-list">
+                  {evaluation.improvements.map((i, idx) => <li key={idx}>{i}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="editor__output-title">{t('code.output')}</div>
+        <pre className={`editor__output-content ${output.startsWith('Error') ? 'editor__output-content--error' : 'editor__output-content--success'}`}>
+          {output || t('code.noOutput')}
+        </pre>
       </div>
     </div>
   );

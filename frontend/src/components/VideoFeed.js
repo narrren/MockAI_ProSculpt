@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import Webcam from 'react-webcam';
+import './VideoFeed.css';
 
 const VideoFeed = forwardRef(({ onAlerts, wsConnected }, ref) => {
   const webcamRef = useRef(null);
@@ -36,33 +37,31 @@ const VideoFeed = forwardRef(({ onAlerts, wsConnected }, ref) => {
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', marginBottom: '20px' }}>
+    <div className="video-feed">
       <Webcam
         ref={webcamRef}
         audio={false}
         screenshotFormat="image/jpeg"
         videoConstraints={videoConstraints}
-        style={{ width: '100%', borderRadius: '8px' }}
+        className="video-feed__video"
         onUserMedia={() => setIsStreaming(true)}
         onUserMediaError={(error) => {
           console.error('Webcam error:', error);
           setIsStreaming(false);
         }}
       />
-      {!isStreaming && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '10px 20px',
-          borderRadius: '5px'
-        }}>
-          Waiting for camera...
-        </div>
-      )}
+      <div className="video-feed__overlay">
+        {!isStreaming && (
+          <div className="video-feed__status video-feed__status--inactive">
+            Waiting for camera...
+          </div>
+        )}
+        {isStreaming && (
+          <div className="video-feed__status video-feed__status--active">
+            Camera Active
+          </div>
+        )}
+      </div>
     </div>
   );
 });

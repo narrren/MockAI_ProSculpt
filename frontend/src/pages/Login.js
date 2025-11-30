@@ -6,6 +6,16 @@ import './Auth.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+// Check backend health before login
+const checkBackendHealth = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/health`, { timeout: 3000 });
+    return response.data.status === 'healthy';
+  } catch (error) {
+    return false;
+  }
+};
+
 const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +29,13 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
     e.preventDefault();
     if (!email.trim()) {
       setError('Please enter your email');
+      return;
+    }
+    
+    // Check backend health first
+    const isBackendHealthy = await checkBackendHealth();
+    if (!isBackendHealthy) {
+      setError(`Cannot connect to backend server. Please ensure the backend is running on ${API_URL}. Check the terminal where you started the backend server.`);
       return;
     }
     
@@ -62,7 +79,12 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
       } else if (response.data.status === 'otp_required') {
         // Regular user - OTP required
         setStep('otp');
-        setMessage(response.data.message);
+        // If OTP is included in response (email not configured), show it
+        if (response.data.otp) {
+          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(Email not configured - OTP shown here for testing. Check backend console for details.)`);
+        } else {
+          setMessage(response.data.message);
+        }
       } else {
         setError(response.data.message || 'Login failed');
       }
@@ -213,7 +235,21 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
                 style={{ fontSize: '24px', textAlign: 'center', letterSpacing: '8px' }}
               />
               <small className="form-hint">
-                {t('auth.otpHint', 'Check your email for the OTP. It expires in 10 minutes.')}
+                {message && message.includes('OTP:') ? (
+                  <div style={{ 
+                    background: '#fff3cd', 
+                    border: '1px solid #ffc107', 
+                    borderRadius: '5px', 
+                    padding: '15px', 
+                    marginTop: '10px',
+                    whiteSpace: 'pre-line',
+                    fontSize: '14px'
+                  }}>
+                    {message}
+                  </div>
+                ) : (
+                  t('auth.otpHint', `Check your email (${email}) for the OTP. It expires in 10 minutes.`)
+                )}
               </small>
             </div>
 

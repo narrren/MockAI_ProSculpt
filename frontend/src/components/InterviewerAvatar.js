@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { t } from '../i18n/languages';
+import './InterviewerAvatar.css';
 
 const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech = null }) => {
   const displayName = interviewerName || t('app.interviewer');
@@ -54,68 +55,20 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
   };
 
   return (
-    <div style={avatarStyle}>
-      <div style={avatarIconStyle}>
-        👨‍💼
-      </div>
-      <div style={nameStyle}>{displayName}</div>
-      <div style={statusStyle}>
-        {isSpeaking ? (
-          <>
-            <span style={{ 
-              display: 'inline-block',
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#4ade80',
-              animation: 'pulse 1.5s infinite'
-            }}></span>
-            {t('app.speaking')}
-          </>
-        ) : (
-          <>
-            <span style={{ 
-              display: 'inline-block',
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#94a3b8'
-            }}></span>
-            {t('app.listening')}
-          </>
-        )}
+    <div className={`avatar ${isSpeaking ? 'avatar--speaking' : ''}`}>
+      <div className="avatar__container">
+        <div className="avatar__icon">👨‍💼</div>
+        <h3 className="avatar__name">{displayName}</h3>
+        <div className="avatar__status">
+          <span className="avatar__status-dot"></span>
+          {isSpeaking ? t('app.speaking') : t('app.listening')}
+        </div>
       </div>
       {isSpeaking && currentSpeech && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '10px',
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '14px',
-          textAlign: 'center',
-          maxHeight: '80px',
-          overflowY: 'auto',
-          border: '2px solid rgba(255, 255, 255, 0.3)',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#4ade80' }}>
-            🎤 Speaking:
-          </div>
-          <div style={{ lineHeight: '1.5' }}>
-            {currentSpeech}
-          </div>
+        <div className="avatar__subtitle">
+          {currentSpeech}
         </div>
       )}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
     </div>
   );
 };

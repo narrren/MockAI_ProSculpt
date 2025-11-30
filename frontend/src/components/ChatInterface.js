@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import speechService from '../services/speechService';
 import { t } from '../i18n/languages';
+import './ChatInterface.css';
 
-const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange }) => {
+const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, onSpeechTextChange, onCodingQuestion }) => {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
@@ -130,9 +131,19 @@ const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, on
       const res = await axios.post(`${apiUrl}/chat`, { message: userMessage });
       const aiMessage = { sender: 'ai', text: res.data.reply };
       setMessages([...newMsgs, aiMessage]);
+      
+      // Check if it's a coding question
+      const isCodingQuestion = res.data.is_coding_question || false;
+      const suggestedLanguage = res.data.suggested_language || 'python';
+      
       if (onInterviewerMessage) {
-        onInterviewerMessage(res.data.reply);
+        onInterviewerMessage(res.data.reply, isCodingQuestion, suggestedLanguage);
       }
+      
+      if (onCodingQuestion && isCodingQuestion) {
+        onCodingQuestion(res.data.reply, suggestedLanguage);
+      }
+      
       // Speak the AI response
       speakMessage(res.data.reply);
     } catch (error) {
@@ -269,228 +280,64 @@ const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, on
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      overflow: 'hidden',
-      background: '#1e1e1e'
-    }}>
-      
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '20px',
-        background: '#1e1e1e',
-        scrollbarWidth: 'thin',
-        scrollbarColor: '#555 #1e1e1e'
-      }}>
+    <>
+      <div className="chat__messages">
         {messages.map((m, i) => (
           <div
             key={i}
-            style={{
-              display: 'flex',
-              justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start',
-              marginBottom: '20px',
-              alignItems: 'flex-start',
-              gap: '10px'
-            }}
+            className={`chat__message ${m.sender === 'user' ? 'chat__message--user' : 'chat__message--ai'}`}
           >
             {m.sender === 'ai' && (
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                flexShrink: 0
-              }}>
-                👨‍💼
-              </div>
+              <div className="chat__avatar">👨‍💼</div>
             )}
-            <div style={{
-              maxWidth: '70%',
-              padding: '12px 16px',
-              borderRadius: m.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-              background: m.sender === 'user' 
-                ? 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)' 
-                : 'linear-gradient(135deg, #444 0%, #333 100%)',
-              color: 'white',
-              wordWrap: 'break-word',
-              whiteSpace: 'pre-wrap',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-              lineHeight: '1.5'
-            }}>
+            <div className="chat__bubble">
               {m.text}
             </div>
             {m.sender === 'user' && (
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                flexShrink: 0
-              }}>
-                👤
-              </div>
+              <div className="chat__avatar">👤</div>
             )}
           </div>
         ))}
         {isLoading && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            marginBottom: '15px'
-          }}>
-            <div style={{
-              padding: '10px 15px',
-              borderRadius: '10px',
-              background: '#444',
-              color: 'white'
-            }}>
-              {t('chat.thinking')}
-            </div>
+          <div className="chat__loading">
+            <div className="chat__loading-dot"></div>
+            <div className="chat__loading-dot"></div>
+            <div className="chat__loading-dot"></div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{
-        padding: '12px',
-        background: '#2d2d2d',
-        borderTop: '2px solid #555',
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'center',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.2)'
-      }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder={isListening ? t('chat.listening') : (t('chat.placeholder') || 'Type your message here...')}
-          disabled={isLoading || isListening}
-          style={{
-            flex: 1,
-            padding: '12px 15px',
-            background: isListening ? '#2a4a2a' : '#1e1e1e',
-            border: isListening ? '2px solid #4ade80' : '2px solid #007bff',
-            borderRadius: '8px',
-            color: 'white',
-            fontSize: '15px',
-            transition: 'all 0.3s ease',
-            outline: 'none'
-          }}
-          onFocus={(e) => {
-            if (!isListening) {
-              e.target.style.borderColor = '#0056b3';
-              e.target.style.boxShadow = '0 0 8px rgba(0, 123, 255, 0.5)';
-            }
-          }}
-          onBlur={(e) => {
-            if (!isListening) {
-              e.target.style.borderColor = '#007bff';
-              e.target.style.boxShadow = 'none';
-            }
-          }}
-        />
-        <button
-          onClick={toggleVoiceInput}
-          disabled={isLoading || isSpeaking}
-          title={isListening ? "Stop listening" : "Start voice input (Click to speak)"}
-          style={{
-            padding: '12px 15px',
-            background: isListening ? '#dc3545' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: (isLoading || isSpeaking) ? 'not-allowed' : 'pointer',
-            fontWeight: 'bold',
-            fontSize: '18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: '50px',
-            height: '45px',
-            animation: isListening ? 'pulse 1.5s infinite' : 'none',
-            transition: 'all 0.3s ease',
-            boxShadow: isListening ? '0 0 10px rgba(220, 53, 69, 0.5)' : '0 2px 4px rgba(0, 0, 0, 0.2)'
-          }}
-          onMouseEnter={(e) => {
-            if (!isLoading && !isSpeaking) {
-              e.target.style.transform = 'scale(1.05)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-          }}
-        >
-          {isListening ? '⏹' : '🎤'}
-        </button>
-        <button
-          onClick={sendMessage}
-          disabled={isLoading || !input.trim() || isListening}
-          style={{
-            padding: '12px 24px',
-            background: isLoading ? '#555' : (!input.trim() || isListening ? '#6c757d' : '#007bff'),
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: (isLoading || !input.trim() || isListening) ? 'not-allowed' : 'pointer',
-            fontWeight: 'bold',
-            fontSize: '15px',
-            height: '45px',
-            transition: 'all 0.3s ease',
-            boxShadow: (!isLoading && input.trim() && !isListening) ? '0 2px 8px rgba(0, 123, 255, 0.4)' : 'none'
-          }}
-          onMouseEnter={(e) => {
-            if (!isLoading && input.trim() && !isListening) {
-              e.target.style.transform = 'scale(1.05)';
-              e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.6)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = (!isLoading && input.trim() && !isListening) ? '0 2px 8px rgba(0, 123, 255, 0.4)' : 'none';
-          }}
-        >
-          {isLoading ? '⏳' : `📤 ${t('chat.send')}`}
-        </button>
-      </div>
-      {isListening && (
-        <div style={{
-          padding: '10px',
-          background: '#2a4a2a',
-          borderTop: '2px solid #4ade80',
-          textAlign: 'center',
-          color: '#4ade80',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          animation: 'pulse 1.5s infinite',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px'
-        }}>
-          <span style={{
-            display: 'inline-block',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: '#4ade80',
-            animation: 'pulse 1s infinite'
-          }}></span>
-          🎤 {t('chat.listening')} {t('common.speakNow', 'Speak now...')}
+      <div className="chat__input-area">
+        <div className="chat__input-wrapper">
+          <input
+            className="chat__input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={isListening ? t('chat.listening') : (t('chat.placeholder') || 'Type your message here...')}
+            disabled={isLoading || isListening}
+          />
         </div>
-      )}
-    </div>
+        <div className="chat__actions">
+          <button
+            className={`chat__btn chat__btn--mic ${isListening ? 'active' : ''}`}
+            onClick={toggleVoiceInput}
+            disabled={isLoading || isSpeaking}
+            title={isListening ? "Stop listening" : "Start voice input (Click to speak)"}
+          >
+            {isListening ? '⏹' : '🎤'}
+          </button>
+          <button
+            className="chat__btn chat__btn--send"
+            onClick={sendMessage}
+            disabled={isLoading || !input.trim() || isListening}
+          >
+            {isLoading ? '⏳' : `📤 ${t('chat.send')}`}
+          </button>
+        </div>
+      </div>
+    </>
   );
 };
 

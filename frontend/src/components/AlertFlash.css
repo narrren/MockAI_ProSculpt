@@ -1,3 +1,4 @@
+/* ====== Alert Flash ====== */
 .alert-flash-container {
   position: fixed;
   top: 0;
@@ -10,26 +11,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .alert-flash {
-  background: rgba(220, 53, 69, 0.95);
+  background: rgba(220, 38, 38, 0.95);
   color: white;
-  padding: 30px 50px;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
   display: flex;
   align-items: center;
-  gap: 20px;
-  font-size: 24px;
-  font-weight: bold;
+  gap: var(--space-5);
+  font-size: var(--fs-2xl);
+  font-weight: 700;
   min-width: 400px;
   max-width: 600px;
   text-align: center;
   pointer-events: auto;
   animation: flashIn 0.3s ease-out, flashOut 0.3s ease-in 4.7s;
   transform-origin: center;
+  backdrop-filter: blur(8px);
 }
 
 .alert-flash-icon {
@@ -75,12 +77,11 @@
 @media (max-width: 768px) {
   .alert-flash {
     min-width: 90%;
-    padding: 20px 30px;
-    font-size: 18px;
+    padding: var(--space-5) var(--space-8);
+    font-size: var(--fs-xl);
   }
   
   .alert-flash-icon {
     font-size: 28px;
   }
 }
-

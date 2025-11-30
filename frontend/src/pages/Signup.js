@@ -43,7 +43,12 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
 
       if (response.data.status === 'success') {
         setStep('verify');
-        setMessage(response.data.message);
+        // If OTP is included in response (email not configured), show it
+        if (response.data.otp) {
+          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(Email not configured - OTP shown here for testing. Check backend console for details.)`);
+        } else {
+          setMessage(response.data.message);
+        }
       } else {
         setError(response.data.message || 'Registration failed');
       }
@@ -181,7 +186,21 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
                 style={{ fontSize: '24px', textAlign: 'center', letterSpacing: '8px' }}
               />
               <small className="form-hint">
-                {t('auth.otpHintWithEmail', `Check your email (${email}) for the OTP. It expires in 10 minutes.`)}
+                {message && message.includes('OTP:') ? (
+                  <div style={{ 
+                    background: '#fff3cd', 
+                    border: '1px solid #ffc107', 
+                    borderRadius: '5px', 
+                    padding: '15px', 
+                    marginTop: '10px',
+                    whiteSpace: 'pre-line',
+                    fontSize: '14px'
+                  }}>
+                    {message}
+                  </div>
+                ) : (
+                  t('auth.otpHintWithEmail', `Check your email (${email}) for the OTP. It expires in 10 minutes.`)
+                )}
               </small>
             </div>
 
