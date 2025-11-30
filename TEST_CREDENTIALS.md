@@ -5,7 +5,7 @@
 For testing purposes, you can use these credentials to login without OTP verification:
 
 - **Email**: `test@aptiva.ai`
-- **Password**: `test123`
+- **Password**: `aptivatesting`
 
 **Note**: This account bypasses OTP verification and logs in directly. Only you (the developer) should know these credentials.
 

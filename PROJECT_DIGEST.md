@@ -695,7 +695,7 @@ EMAIL_PASSWORD=your-app-password
 ### Test Credentials
 
 - **Email**: `test@aptiva.ai`
-- **Password**: `test123`
+- **Password**: `aptivatesting`
 - **Note**: Bypasses OTP verification
 
 ---
