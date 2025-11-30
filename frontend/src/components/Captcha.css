@@ -95,7 +95,8 @@
 .captcha-input-group {
   display: flex;
   gap: var(--space-2);
-  align-items: center;
+  align-items: stretch;
+  width: 100%;
 }
 
 .captcha-input {
@@ -112,6 +113,7 @@
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .captcha-input:focus {
@@ -132,10 +134,13 @@
   cursor: pointer;
   font-size: 20px;
   transition: all 0.3s;
-  min-width: 50px;
+  min-width: 60px;
+  width: 60px;
   color: var(--text);
   display: grid;
   place-items: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .captcha-refresh:hover {

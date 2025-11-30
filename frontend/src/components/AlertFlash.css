@@ -1,10 +1,56 @@
-.alert-flash-container {
+.alert-flash-overlay {
   position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 70;
   pointer-events: none;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.alert-flash-popup {
+  background: var(--surface);
+  border: 2px solid #d97706;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 300px;
+  max-width: 500px;
+  animation: fadeOut 0.3s ease-out 4.7s forwards;
+  pointer-events: all;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+.alert-flash-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.alert-flash-text {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
 }
 
 .flash {
@@ -60,62 +106,10 @@
   color: #0284c7;
 }
 
-.alert-flash {
-  background: var(--surface);
-  border: 2px solid #d97706;
-  padding: var(--space-5) var(--space-6);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 400px;
-  max-width: 600px;
-  animation: alertFlashIn 0.3s ease-out;
-  pointer-events: all;
-}
-
-@keyframes alertFlashIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.alert-flash.show {
-  animation: alertFlashIn 0.3s ease-out;
-}
-
-.alert-flash.hide {
-  animation: alertFlashOut 0.3s ease-out forwards;
-}
-
-@keyframes alertFlashOut {
-  to {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-}
-
-.alert-flash-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-}
-
-.alert-flash-text {
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  flex: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .flash__panel,
-  .alert-flash {
+  .alert-flash-overlay,
+  .alert-flash-popup,
+  .flash__panel {
     animation: none;
   }
 }

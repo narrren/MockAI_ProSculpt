@@ -35,25 +35,16 @@ const AlertFlash = ({ alerts, onDismiss }) => {
     return null;
   }
 
+  // Show only the most recent alert
+  const currentAlert = visibleAlerts[visibleAlerts.length - 1];
+
   return (
-    <>
-      {visibleAlerts.map((alert, index) => (
-        <div
-          key={alert.id}
-          className="flash"
-          style={{
-            zIndex: 70 + index,
-            animationDelay: `${index * 0.1}s`
-          }}
-        >
-          <div className="flash__panel">
-            <div className="flash__message flash__message--warning">
-              ⚠️ {alert.text}
-            </div>
-          </div>
-        </div>
-      ))}
-    </>
+    <div className="alert-flash-overlay">
+      <div className="alert-flash-popup">
+        <div className="alert-flash-icon">⚠️</div>
+        <div className="alert-flash-text">{currentAlert.text}</div>
+      </div>
+    </div>
   );
 };
 
