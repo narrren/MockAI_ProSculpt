@@ -379,6 +379,27 @@ html[data-theme="dark"] .topbar {
   color: var(--text);
 }
 
+.logo__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.logo__name {
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  color: var(--text);
+}
+
+.logo__tagline {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.3px;
+}
+
 .logo__img {
   width: 32px;
   height: 32px;

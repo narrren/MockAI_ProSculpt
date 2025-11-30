@@ -30,6 +30,7 @@ export const languages = {
     
     // App
     'app.title': 'Aptiva',
+    'app.tagline': 'Insight That Elevates',
     'app.proctoringActive': 'Proctoring Active',
     'app.proctoringOffline': 'Proctoring Offline',
     'app.logout': 'Logout',
@@ -105,6 +106,7 @@ export const languages = {
     
     // App
     'app.title': 'Aptiva',
+    'app.tagline': 'Insight That Elevates',
     'app.proctoringActive': 'Vigilancia Activa',
     'app.proctoringOffline': 'Vigilancia Desconectada',
     'app.logout': 'Cerrar Sesión',
@@ -180,6 +182,7 @@ export const languages = {
     
     // App
     'app.title': 'Aptiva',
+    'app.tagline': 'Insight That Elevates',
     'app.proctoringActive': 'Surveillance Active',
     'app.proctoringOffline': 'Surveillance Hors Ligne',
     'app.logout': 'Déconnexion',
@@ -255,6 +258,7 @@ export const languages = {
     
     // App
     'app.title': 'Aptiva',
+    'app.tagline': 'Insight That Elevates',
     'app.proctoringActive': 'निगरानी सक्रिय',
     'app.proctoringOffline': 'निगरानी ऑफलाइन',
     'app.logout': 'लॉगआउट',

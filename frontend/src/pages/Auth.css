@@ -52,6 +52,22 @@
   margin-bottom: var(--space-3);
 }
 
+.auth-logo > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.auth-tagline {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin: 0;
+  font-style: italic;
+}
+
 .logo-icon {
   width: 48px;
   height: 48px;
