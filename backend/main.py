@@ -330,12 +330,12 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Analyze frame for proctoring violations
                         alerts = proctor.analyze_frame(frame)
                         
-                        # Send back alerts if any
+                        # Send back alerts if any (deduplicate to prevent spam)
                         if alerts:
-                            await websocket.send_json({"alerts": alerts})
-                        # Also send empty alerts to clear previous ones
-                        else:
-                            await websocket.send_json({"alerts": []})
+                            # Filter out duplicate alerts in the same batch
+                            unique_alerts = list(set(alerts))
+                            await websocket.send_json({"alerts": unique_alerts})
+                        # Don't send empty alerts - let frontend handle state
                     else:
                         print("Warning: Decoded frame is None or empty")
                         await websocket.send_json({"error": "Failed to decode image"})

@@ -159,13 +159,27 @@ function App() {
           try {
             const data = JSON.parse(event.data);
             if (data.alerts && data.alerts.length > 0) {
-              setAlerts(data.alerts);
+              // Filter out duplicate alerts
+              const uniqueAlerts = [...new Set(data.alerts)];
+              
+              // Update alerts array (deduplicate)
+              setAlerts(prev => {
+                const existing = new Set(prev);
+                const newAlerts = uniqueAlerts.filter(alert => !existing.has(alert));
+                return [...prev, ...newAlerts];
+              });
+              
               // Flash alerts on screen only if alerts are enabled
               if (alertsEnabledRef.current) {
-                setFlashAlerts(prev => [...prev, ...data.alerts]);
+                setFlashAlerts(prev => {
+                  const existing = new Set(prev);
+                  const newAlerts = uniqueAlerts.filter(alert => !existing.has(alert));
+                  return [...prev, ...newAlerts];
+                });
               }
             } else {
-              setAlerts([]);
+              // Don't clear all alerts, just don't add new ones
+              // setAlerts([]);
             }
           } catch (error) {
             // Handle ping/pong
