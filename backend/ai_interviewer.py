@@ -51,6 +51,8 @@ Rules:
 
     def chat(self, user_input):
         if not self.model:
+            # Reload .env file to ensure we have the latest API key
+            load_dotenv(dotenv_path=env_path, override=True)
             api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
             if not api_key:
                 return "Error: Google Gemini API key not configured. Please set GOOGLE_API_KEY environment variable. Get your API key from https://makersuite.google.com/app/apikey"
@@ -233,6 +235,8 @@ Rules:
     def evaluate_code(self, code, language, question, expected_output=None):
         """Evaluate if the code correctly solves the given question"""
         if not self.model:
+            # Reload .env file to ensure we have the latest API key
+            load_dotenv(dotenv_path=env_path, override=True)
             api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
             if not api_key:
                 return {
