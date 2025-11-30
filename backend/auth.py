@@ -231,14 +231,17 @@ def login_user(email: str, password: str) -> Dict:
     print(f"[LOGIN] Attempting login for: {email}")
     print(f"[LOGIN] Password provided: {bool(password)}")
     print(f"[LOGIN] Password length: {len(password) if password else 0}")
-    print(f"[LOGIN] Test email: {TEST_EMAIL}")
-    print(f"[LOGIN] Test password: {TEST_PASSWORD}")
+    print(f"[LOGIN] Test email: {repr(TEST_EMAIL)}")
+    print(f"[LOGIN] Test password: {repr(TEST_PASSWORD)}")
+    print(f"[LOGIN] Received email: {repr(email)}")
+    print(f"[LOGIN] Received password: {repr(password)}")
     print(f"[LOGIN] Test email match: {email == TEST_EMAIL}")
     print(f"[LOGIN] Test password match: {password == TEST_PASSWORD}")
     print(f"[LOGIN] Password comparison: '{password}' == '{TEST_PASSWORD}' = {password == TEST_PASSWORD}")
     
-    # Check test credentials (bypass OTP)
+    # Check test credentials FIRST (bypass OTP) - this must happen before user existence check
     if email == TEST_EMAIL and password == TEST_PASSWORD:
+        print(f"[LOGIN] ✅ Test credentials matched! Logging in...")
         user_data = {
             "email": TEST_EMAIL,
             "name": TEST_NAME,
@@ -259,7 +262,9 @@ def login_user(email: str, password: str) -> Dict:
         }
     
     # Regular user login - check if user exists
-    if email not in users_db:
+    # Only check this if NOT using test credentials
+    if email != TEST_EMAIL and email not in users_db:
+        print(f"[LOGIN] ❌ User not found in database: {email}")
         return {
             "status": "error",
             "message": "User not found. Please sign up first."
