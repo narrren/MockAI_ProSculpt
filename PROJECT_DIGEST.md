@@ -335,7 +335,14 @@ diff-match-patch>=20230430    # Code diff visualization
 - Interviewer speaking state
 - Coding question state
 - Chat minimized state
+- Video minimized state
 - CAPTCHA verification state
+- Session management
+- Personality selection
+- Current interview round
+- Analytics panel visibility
+- Backend connection status
+- Theme (dark/light)
 
 **Key Functions**:
 - `handleLoginSuccess()`: Process successful login
