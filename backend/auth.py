@@ -229,8 +229,13 @@ def login_user(email: str, password: str) -> Dict:
     
     # Debug logging
     print(f"[LOGIN] Attempting login for: {email}")
+    print(f"[LOGIN] Password provided: {bool(password)}")
+    print(f"[LOGIN] Password length: {len(password) if password else 0}")
+    print(f"[LOGIN] Test email: {TEST_EMAIL}")
+    print(f"[LOGIN] Test password: {TEST_PASSWORD}")
     print(f"[LOGIN] Test email match: {email == TEST_EMAIL}")
     print(f"[LOGIN] Test password match: {password == TEST_PASSWORD}")
+    print(f"[LOGIN] Password comparison: '{password}' == '{TEST_PASSWORD}' = {password == TEST_PASSWORD}")
     
     # Check test credentials (bypass OTP)
     if email == TEST_EMAIL and password == TEST_PASSWORD:
