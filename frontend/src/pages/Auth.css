@@ -19,11 +19,11 @@
 .auth-box {
   background: var(--surface);
   backdrop-filter: blur(10px);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-12) var(--space-10);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-6);
   width: 100%;
   max-width: 480px;
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--gray-200);
   animation: slideUp 0.5s ease-out;
 }
@@ -81,7 +81,7 @@
   color: var(--text-muted);
   text-align: center;
   margin-bottom: var(--space-10);
-  font-size: var(--fs-xl);
+  font-size: var(--fs-lg);
   font-weight: 400;
   letter-spacing: 0.5px;
 }
@@ -106,7 +106,7 @@
   border: 2px solid var(--gray-300);
   border-radius: var(--radius-md);
   color: var(--text);
-  font-size: var(--fs-base);
+  font-size: var(--fs-md);
   transition: all 0.3s ease;
   box-sizing: border-box;
   font-family: inherit;
@@ -133,7 +133,7 @@
   color: var(--text-muted);
   font-size: var(--fs-xs);
   margin-top: var(--space-2);
-  line-height: var(--lh-normal);
+  line-height: var(--lh-n);
 }
 
 .auth-button {
@@ -143,7 +143,7 @@
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--fs-base);
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;

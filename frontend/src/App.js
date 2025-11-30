@@ -600,7 +600,7 @@ function App() {
       </div>
 
       {/* Floating Chatbox with Avatar in Right Corner */}
-      <div className={`chat ${isChatMinimized ? 'chat--min' : ''}`}>
+      <div className={`float-chat chat ${isChatMinimized ? 'chat--min' : ''}`}>
         <div className="chat__panel">
           <div className="chat__header">
             <div className="chat__title">💬 {t('chat.title')}</div>

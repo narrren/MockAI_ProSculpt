@@ -40,78 +40,65 @@ const ProctoringDashboard = ({ apiUrl, userId }) => {
   };
 
   return (
-    <div className="proctoring-dashboard">
-      <h3 className="proctoring-dashboard__title">🔍 Proctoring Insights</h3>
+    <div className="dashboard card card--padded">
+      <h3 className="card__title">🔍 Proctoring Insights</h3>
       
-      <div className="proctoring-dashboard__scores">
-        <div className="proctoring-dashboard__score-card">
-          <div className="proctoring-dashboard__score-label">Attention Score</div>
-          <div
-            className="proctoring-dashboard__score-value"
-            style={{ color: getScoreColor(insights.summary.attention_score) }}
-          >
+      <div className="dashboard__grid">
+        <div className="dashboard__card">
+          <div className="dashboard__title">Attention Score</div>
+          <div className="dashboard__value" style={{ color: getScoreColor(insights.summary.attention_score) }}>
             {insights.summary.attention_score}/100
           </div>
         </div>
 
-        <div className="proctoring-dashboard__score-card">
-          <div className="proctoring-dashboard__score-label">Confidence Score</div>
-          <div
-            className="proctoring-dashboard__score-value"
-            style={{ color: getScoreColor(insights.summary.confidence_score) }}
-          >
+        <div className="dashboard__card">
+          <div className="dashboard__title">Confidence Score</div>
+          <div className="dashboard__value" style={{ color: getScoreColor(insights.summary.confidence_score) }}>
             {insights.summary.confidence_score}/100
           </div>
         </div>
 
-        <div className="proctoring-dashboard__score-card">
-          <div className="proctoring-dashboard__score-label">Integrity Score</div>
-          <div
-            className="proctoring-dashboard__score-value"
-            style={{ color: getScoreColor(insights.integrity_score) }}
-          >
+        <div className="dashboard__card">
+          <div className="dashboard__title">Integrity Score</div>
+          <div className="dashboard__value" style={{ color: getScoreColor(insights.integrity_score) }}>
             {insights.integrity_score}/100
           </div>
         </div>
       </div>
 
-      <div className="proctoring-dashboard__summary">
-        <div className="proctoring-dashboard__stat">
-          <span className="proctoring-dashboard__stat-label">Total Violations:</span>
-          <span className="proctoring-dashboard__stat-value">{insights.summary.total_violations}</span>
+      <div className="dashboard__list">
+        <div className="dashboard__list-item">
+          <span className="dashboard__list-label">Total Violations:</span>
+          <span>{insights.summary.total_violations}</span>
         </div>
-        <div className="proctoring-dashboard__stat">
-          <span className="proctoring-dashboard__stat-label">Eyes Off Screen:</span>
-          <span className="proctoring-dashboard__stat-value">{insights.summary.eye_off_screen_percent.toFixed(1)}%</span>
+        <div className="dashboard__list-item">
+          <span className="dashboard__list-label">Eyes Off Screen:</span>
+          <span>{insights.summary.eye_off_screen_percent.toFixed(1)}%</span>
         </div>
       </div>
 
       {insights.patterns && insights.patterns.length > 0 && (
-        <div className="proctoring-dashboard__patterns">
-          <h4 className="proctoring-dashboard__patterns-title">Detected Patterns:</h4>
-          <ul className="proctoring-dashboard__patterns-list">
-            {insights.patterns.map((pattern, idx) => (
-              <li key={idx} className="proctoring-dashboard__pattern-item">
-                ⚠️ {pattern}
-              </li>
-            ))}
-          </ul>
+        <div className="dashboard__list">
+          <div className="dashboard__title">Detected Patterns:</div>
+          {insights.patterns.map((pattern, idx) => (
+            <div key={idx} className="dashboard__list-item">
+              ⚠️ {pattern}
+            </div>
+          ))}
         </div>
       )}
 
       {insights.violation_breakdown && Object.keys(insights.violation_breakdown).length > 0 && (
-        <div className="proctoring-dashboard__breakdown">
-          <h4 className="proctoring-dashboard__breakdown-title">Violation Breakdown:</h4>
-          <div className="proctoring-dashboard__breakdown-list">
-            {Object.entries(insights.violation_breakdown).map(([type, count]) => (
-              <div key={type} className="proctoring-dashboard__breakdown-item">
-                <span className="proctoring-dashboard__breakdown-type">
-                  {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </span>
-                <span className="proctoring-dashboard__breakdown-count">{count}</span>
-              </div>
-            ))}
-          </div>
+        <div className="dashboard__list">
+          <div className="dashboard__title">Violation Breakdown:</div>
+          {Object.entries(insights.violation_breakdown).map(([type, count]) => (
+            <div key={type} className="dashboard__list-item">
+              <span className="dashboard__list-label">
+                {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+              </span>
+              <span>{count}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

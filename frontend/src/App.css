@@ -2,11 +2,69 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  background: var(--bg);
 }
 
 .app__main {
   flex: 1 1 auto;
   padding: var(--space-8) 0;
+}
+
+.app-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left-panel,
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.right-panel--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.empty-state__icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+}
+
+.empty-state__title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-2);
+}
+
+.empty-state__text {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  margin-bottom: var(--space-2);
+}
+
+.empty-state__subtext {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
 }
 
 .section {
@@ -47,6 +105,128 @@
   margin-top: var(--space-2);
 }
 
+/* Status indicators */
+.status-indicators {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.status-indicator.connected .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status-indicator.disconnected .status-dot {
+  background: #ef4444;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+
+.alerts-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.alerts-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.alerts-toggle-switch {
+  width: 40px;
+  height: 20px;
+  appearance: none;
+  background: var(--gray-300);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.alerts-toggle-switch:checked {
+  background: var(--brand-500);
+}
+
+.alerts-toggle-switch::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+}
+
+.alerts-toggle-switch:checked::before {
+  transform: translateX(20px);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-300);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-2);
+  box-shadow: var(--shadow-lg);
+}
+
+.analytics-toggle {
+  margin-bottom: var(--space-4);
+}
+
+.analytics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.spacer {
+  flex: 1;
+}
+
 /* Floating panels */
 .float-video {
   position: fixed;
@@ -66,9 +246,48 @@
   max-width: calc(100vw - 40px);
 }
 
+.chat {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 45;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  transition: all 0.3s ease;
+}
+
+.chat--min {
+  width: 200px;
+  height: 50px;
+}
+
+.chat__title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  color: var(--text);
+}
+
+.chat__minimize {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.chat__minimize:hover {
+  background: var(--gray-100);
+  color: var(--text);
+}
+
 @media (max-width: 768px) {
   .float-video,
-  .float-chat {
+  .float-chat,
+  .chat {
     width: calc(100vw - 40px);
     max-width: 360px;
   }
@@ -78,8 +297,13 @@
     bottom: 20px;
   }
   
-  .float-chat {
+  .float-chat,
+  .chat {
     right: 20px;
     bottom: 20px;
+  }
+  
+  .app-container {
+    padding: var(--space-4);
   }
 }

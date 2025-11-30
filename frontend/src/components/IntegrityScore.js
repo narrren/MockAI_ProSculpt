@@ -48,61 +48,47 @@ const IntegrityScore = ({ apiUrl, userId }) => {
   };
 
   return (
-    <div className="integrity-score">
-      <div className="integrity-score__header">
-        <h3 className="integrity-score__title">🔐 Integrity Score</h3>
+    <div className="integrity card card--padded">
+      <div className="integrity__main">
+        <h3 className="card__title">🔐 Integrity Score</h3>
         <div
-          className="integrity-score__main"
-          style={{ color: getScoreColor(score.overall_score) }}
+          className={`integrity__score ${
+            score.overall_score >= 80 ? 'integrity__score--high' : 
+            score.overall_score >= 60 ? 'integrity__score--medium' : 
+            'integrity__score--low'
+          }`}
         >
-          <span className="integrity-score__value">{score.overall_score}</span>
-          <span className="integrity-score__max">/100</span>
+          {score.overall_score}/100
         </div>
-        <div className="integrity-score__label">{getScoreLabel(score.overall_score)}</div>
+        <div className="integrity__label">{getScoreLabel(score.overall_score)}</div>
       </div>
 
-      <div className="integrity-score__breakdown">
-        <h4 className="integrity-score__breakdown-title">Score Breakdown:</h4>
-        <div className="integrity-score__breakdown-list">
-          <div className="integrity-score__breakdown-item">
-            <span className="integrity-score__breakdown-label">Proctoring</span>
-            <span
-              className="integrity-score__breakdown-value"
-              style={{ color: getScoreColor(score.breakdown.proctoring_score) }}
-            >
-              {score.breakdown.proctoring_score}/100
-            </span>
-          </div>
-          <div className="integrity-score__breakdown-item">
-            <span className="integrity-score__breakdown-label">Code Plagiarism</span>
-            <span
-              className="integrity-score__breakdown-value"
-              style={{ color: getScoreColor(score.breakdown.code_plagiarism_score) }}
-            >
-              {score.breakdown.code_plagiarism_score}/100
-            </span>
-          </div>
-          <div className="integrity-score__breakdown-item">
-            <span className="integrity-score__breakdown-label">Time Consistency</span>
-            <span
-              className="integrity-score__breakdown-value"
-              style={{ color: getScoreColor(score.breakdown.time_consistency) }}
-            >
-              {score.breakdown.time_consistency}/100
-            </span>
-          </div>
-          <div className="integrity-score__breakdown-item">
-            <span className="integrity-score__breakdown-label">Window Switches</span>
-            <span className="integrity-score__breakdown-value">
-              {score.breakdown.window_switches}
-            </span>
-          </div>
+      <div className="integrity__breakdown">
+        <div className="integrity__item">
+          <span className="integrity__item-label">Proctoring</span>
+          <span className="integrity__item-value" style={{ color: getScoreColor(score.breakdown.proctoring_score) }}>
+            {score.breakdown.proctoring_score}/100
+          </span>
         </div>
-      </div>
-
-      <div className="integrity-score__footer">
-        <div className="integrity-score__stat">
-          Total Violations: <strong>{score.total_violations}</strong>
+        <div className="integrity__item">
+          <span className="integrity__item-label">Code Plagiarism</span>
+          <span className="integrity__item-value" style={{ color: getScoreColor(score.breakdown.code_plagiarism_score) }}>
+            {score.breakdown.code_plagiarism_score}/100
+          </span>
+        </div>
+        <div className="integrity__item">
+          <span className="integrity__item-label">Time Consistency</span>
+          <span className="integrity__item-value" style={{ color: getScoreColor(score.breakdown.time_consistency) }}>
+            {score.breakdown.time_consistency}/100
+          </span>
+        </div>
+        <div className="integrity__item">
+          <span className="integrity__item-label">Window Switches</span>
+          <span className="integrity__item-value">{score.breakdown.window_switches}</span>
+        </div>
+        <div className="integrity__item">
+          <span className="integrity__item-label">Total Violations</span>
+          <span className="integrity__item-value">{score.total_violations}</span>
         </div>
       </div>
     </div>

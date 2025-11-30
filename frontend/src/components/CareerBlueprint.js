@@ -58,23 +58,25 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
   }
 
   return (
-    <div className="career-blueprint">
-      <div className="career-blueprint__header">
-        <h2 className="career-blueprint__title">🎯 Your Career Roadmap</h2>
-        <div className="career-blueprint__compatibility">
-          <span className="career-blueprint__role">{blueprint.role_compatibility}</span>
-          <span className="career-blueprint__score">{blueprint.compatibility_score}/100</span>
+    <div className="blueprint card card--padded">
+      <div className="blueprint__section">
+        <h2 className="blueprint__title">🎯 Your Career Roadmap</h2>
+        <div className="blueprint__compatibility">
+          <div>
+            <div className="blueprint__compatibility-label">{blueprint.role_compatibility}</div>
+            <div className="blueprint__compatibility-score">{blueprint.compatibility_score}/100</div>
+          </div>
         </div>
       </div>
 
       {blueprint.strengths && blueprint.strengths.length > 0 && (
-        <div className="career-blueprint__section">
-          <h3 className="career-blueprint__section-title">✅ Strengths</h3>
-          <div className="career-blueprint__list">
+        <div className="blueprint__section">
+          <h3 className="blueprint__title">✅ Strengths</h3>
+          <div className="blueprint__list">
             {blueprint.strengths.map((item, idx) => (
-              <div key={idx} className="career-blueprint__item career-blueprint__item--strength">
-                <span className="career-blueprint__item-name">{item.skill}</span>
-                <span className="career-blueprint__item-score">{item.score}/100</span>
+              <div key={idx} className="blueprint__item">
+                <div className="blueprint__item-label">{item.skill}</div>
+                <div className="blueprint__item-desc">Score: {item.score}/100</div>
               </div>
             ))}
           </div>
@@ -82,14 +84,13 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
       )}
 
       {blueprint.weaknesses && blueprint.weaknesses.length > 0 && (
-        <div className="career-blueprint__section">
-          <h3 className="career-blueprint__section-title">📈 Areas for Improvement</h3>
-          <div className="career-blueprint__list">
+        <div className="blueprint__section">
+          <h3 className="blueprint__title">📈 Areas for Improvement</h3>
+          <div className="blueprint__list">
             {blueprint.weaknesses.map((item, idx) => (
-              <div key={idx} className="career-blueprint__item career-blueprint__item--weakness">
-                <span className="career-blueprint__item-name">{item.skill}</span>
-                <span className="career-blueprint__item-score">{item.score}/100</span>
-                <span className="career-blueprint__item-gap">Gap: {item.gap} points</span>
+              <div key={idx} className="blueprint__item blueprint__item--weakness">
+                <div className="blueprint__item-label">{item.skill}</div>
+                <div className="blueprint__item-desc">Score: {item.score}/100 | Gap: {item.gap} points</div>
               </div>
             ))}
           </div>
@@ -97,20 +98,15 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
       )}
 
       {blueprint.recommendations && blueprint.recommendations.length > 0 && (
-        <div className="career-blueprint__section">
-          <h3 className="career-blueprint__section-title">📚 Recommended Learning Path</h3>
-          <div className="career-blueprint__recommendations">
+        <div className="blueprint__section">
+          <h3 className="blueprint__title">📚 Recommended Learning Path</h3>
+          <div className="blueprint__timeline">
             {blueprint.recommendations.map((rec, idx) => (
-              <div key={idx} className="career-blueprint__recommendation">
-                <div className="career-blueprint__rec-header">
-                  <span className="career-blueprint__rec-title">{rec.title}</span>
-                  <span className={`career-blueprint__rec-priority career-blueprint__rec-priority--${rec.priority}`}>
-                    {rec.priority}
-                  </span>
-                </div>
-                <div className="career-blueprint__rec-details">
-                  <span className="career-blueprint__rec-platform">📖 {rec.platform}</span>
-                  <span className="career-blueprint__rec-time">⏱️ {rec.estimated_time}</span>
+              <div key={idx} className="blueprint__timeline-item">
+                <div className="blueprint__timeline-dot"></div>
+                <div className="blueprint__timeline-content">
+                  <div className="blueprint__timeline-title">{rec.title}</div>
+                  <div className="blueprint__timeline-desc">📖 {rec.platform} | ⏱️ {rec.estimated_time} | Priority: {rec.priority}</div>
                 </div>
               </div>
             ))}
@@ -118,11 +114,11 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
         </div>
       )}
 
-      <div className="career-blueprint__footer">
-        <p className="career-blueprint__timeline">
-          Estimated timeline to reach target level: <strong>{blueprint.estimated_timeline_weeks} weeks</strong>
+      <div className="blueprint__section">
+        <p className="blueprint__item-desc">
+          Estimated timeline: <strong>{blueprint.estimated_timeline_weeks} weeks</strong>
         </p>
-        <p className="career-blueprint__assessment">{blueprint.overall_assessment}</p>
+        <p className="blueprint__item-desc">{blueprint.overall_assessment}</p>
       </div>
     </div>
   );

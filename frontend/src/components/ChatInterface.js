@@ -281,61 +281,50 @@ const ChatInterface = ({ apiUrl, onInterviewerMessage, onSpeakingStateChange, on
 
   return (
     <>
-      <div className="chat__messages">
+      <div className="chat__body">
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`chat__message ${m.sender === 'user' ? 'chat__message--user' : 'chat__message--ai'}`}
+            className={`msg ${m.sender === 'user' ? 'msg--me' : 'msg--ai'}`}
           >
-            {m.sender === 'ai' && (
-              <div className="chat__avatar">👨‍💼</div>
-            )}
-            <div className="chat__bubble">
+            <div className="msg__bubble">
               {m.text}
             </div>
-            {m.sender === 'user' && (
-              <div className="chat__avatar">👤</div>
-            )}
           </div>
         ))}
         {isLoading && (
-          <div className="chat__loading">
-            <div className="chat__loading-dot"></div>
-            <div className="chat__loading-dot"></div>
-            <div className="chat__loading-dot"></div>
+          <div className="msg msg--ai">
+            <div className="msg__bubble">Thinking...</div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat__input-area">
-        <div className="chat__input-wrapper">
-          <input
-            className="chat__input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={isListening ? t('chat.listening') : (t('chat.placeholder') || 'Type your message here...')}
-            disabled={isLoading || isListening}
-          />
-        </div>
-        <div className="chat__actions">
-          <button
-            className={`chat__btn chat__btn--mic ${isListening ? 'active' : ''}`}
-            onClick={toggleVoiceInput}
-            disabled={isLoading || isSpeaking}
-            title={isListening ? "Stop listening" : "Start voice input (Click to speak)"}
-          >
-            {isListening ? '⏹' : '🎤'}
-          </button>
-          <button
-            className="chat__btn chat__btn--send"
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim() || isListening}
-          >
-            {isLoading ? '⏳' : `📤 ${t('chat.send')}`}
-          </button>
-        </div>
+      <div className="chat__inputbar">
+        <input
+          className="chat__input input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={isListening ? t('chat.listening') : (t('chat.placeholder') || 'Type your message here...')}
+          disabled={isLoading || isListening}
+        />
+        <button
+          className={`voice-btn ${isListening ? 'active' : ''}`}
+          onClick={toggleVoiceInput}
+          disabled={isLoading || isSpeaking}
+          aria-pressed={isListening}
+          title={isListening ? "Stop listening" : "Start voice input (Click to speak)"}
+        >
+          {isListening ? '⏹' : '🎤'}
+        </button>
+        <button
+          className="btn btn--primary btn--sm"
+          onClick={sendMessage}
+          disabled={isLoading || !input.trim() || isListening}
+        >
+          {isLoading ? '⏳' : t('chat.send', 'Send')}
+        </button>
       </div>
     </>
   );

@@ -38,28 +38,31 @@ const PersonalitySelector = ({ apiUrl, onPersonalityChange }) => {
   };
 
   if (loading) {
-    return <div className="personality-selector loading">Loading...</div>;
+    return <div className="personality loading">Loading...</div>;
   }
 
   return (
-    <div className="personality-selector">
-      <label className="personality-selector__label">Interviewer Style</label>
-      <div className="personality-selector__grid">
+    <div className="personality card card--padded">
+      <h3 className="card__title">Interviewer Style</h3>
+      <div className="personality__grid">
         {personalities.map((personality) => (
           <div
             key={personality.id}
-            className={`personality-selector__card ${selected === personality.id ? 'personality-selector__card--active' : ''}`}
+            className={`personality__card ${selected === personality.id ? 'personality__card--selected' : ''}`}
             onClick={() => handleChange(personality.id)}
           >
-            <div className="personality-selector__icon">
+            <div style={{ fontSize: '32px', marginBottom: 'var(--space-2)' }}>
               {personality.id === 'tough' && '🔥'}
               {personality.id === 'friendly' && '😊'}
               {personality.id === 'rapid-fire' && '⚡'}
               {personality.id === 'architect' && '🏗️'}
               {personality.id === 'professional' && '👔'}
             </div>
-            <div className="personality-selector__name">{personality.name}</div>
-            <div className="personality-selector__description">{personality.description}</div>
+            <div className="personality__name">{personality.name}</div>
+            <div className="personality__desc">{personality.description}</div>
+            {selected === personality.id && (
+              <span className="personality__badge">Selected</span>
+            )}
           </div>
         ))}
       </div>

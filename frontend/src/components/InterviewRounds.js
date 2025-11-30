@@ -39,26 +39,22 @@ const InterviewRounds = ({ apiUrl, userId, onRoundChange }) => {
   };
 
   return (
-    <div className="interview-rounds">
-      <h3 className="interview-rounds__title">Interview Rounds</h3>
-      <div className="interview-rounds__list">
+    <div className="rounds card card--padded">
+      <h3 className="card__title">Interview Rounds</h3>
+      <div className="rounds__tracker">
         {rounds.map((round) => {
           const status = getRoundStatus(round.id);
           return (
             <div
               key={round.id}
-              className={`interview-rounds__item interview-rounds__item--${status}`}
+              className={`rounds__item ${
+                status === 'active' ? 'rounds__item--active' : 
+                status === 'completed' ? 'rounds__item--completed' : ''
+              }`}
               onClick={() => status !== 'pending' && startRound(round.id)}
             >
-              <div className="interview-rounds__item-number">{round.id}</div>
-              <div className="interview-rounds__item-content">
-                <div className="interview-rounds__item-name">{round.name}</div>
-                <div className="interview-rounds__item-status">
-                  {status === 'completed' && '✅ Completed'}
-                  {status === 'active' && '🔄 Active'}
-                  {status === 'pending' && '⏳ Pending'}
-                </div>
-              </div>
+              <div className="rounds__number">{round.id}</div>
+              <div className="rounds__name">{round.name}</div>
             </div>
           );
         })}
