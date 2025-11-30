@@ -107,7 +107,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 @app.get("/")
 async def root():
     return {
-        "message": "MockAI ProSculpt API",
+        "message": "Aptiva API",
         "status": "running",
         "endpoints": {
             "chat": "/chat",

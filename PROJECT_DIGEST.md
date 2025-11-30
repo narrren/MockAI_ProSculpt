@@ -1,4 +1,4 @@
-# 📚 MockAI ProSculpt - Complete Project Digest
+# 📚 Aptiva - Complete Project Digest
 
 ## 📋 Table of Contents
 1. [Project Overview](#project-overview)
@@ -20,7 +20,7 @@
 
 ## 🎯 Project Overview
 
-**MockAI ProSculpt** is a comprehensive AI-powered technical interview platform with real-time proctoring capabilities. It provides a complete interview experience including AI interviewer, code execution, proctoring, and authentication.
+**Aptiva** is a comprehensive AI-powered interview intelligence platform with real-time proctoring capabilities. It provides a complete interview experience including AI interviewer, code execution, proctoring, and authentication.
 
 ### Key Characteristics
 - **Type**: Full-stack web application
@@ -88,7 +88,7 @@
 ## 📁 Project Structure
 
 ```
-MockAI_ProSculpt/
+Aptiva/
 ├── backend/                          # Python backend server
 │   ├── __pycache__/                  # Python bytecode cache
 │   ├── venv/                         # Python virtual environment
@@ -976,5 +976,5 @@ EMAIL_PASSWORD=your-app-password
 
 ---
 
-*This digest contains every component, technology, and feature of the MockAI ProSculpt project.*
+*This digest contains every component, technology, and feature of the Aptiva project.*
 

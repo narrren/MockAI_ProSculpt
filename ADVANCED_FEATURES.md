@@ -1,6 +1,6 @@
 # 🚀 Advanced Features - SaaS-Ready Platform
 
-This document describes the advanced features added to transform MockAI ProSculpt from an MVP to a production-ready SaaS platform.
+This document describes the advanced features added to transform Aptiva from an MVP to a production-ready SaaS platform.
 
 ## 📋 Table of Contents
 
@@ -39,10 +39,10 @@ This document describes the advanced features added to transform MockAI ProSculp
 ### Setup
 ```bash
 # Set DATABASE_URL in .env
-DATABASE_URL=postgresql://user:password@localhost/prosculpt
+DATABASE_URL=postgresql://user:password@localhost/aptiva
 
 # Or use SQLite for development
-DATABASE_URL=sqlite:///./prosculpt.db
+DATABASE_URL=sqlite:///./aptiva.db
 ```
 
 ### API Endpoints
@@ -363,10 +363,10 @@ html2canvas>=1.0.0  # Frontend
 2. **Setup Database**
    ```bash
    # PostgreSQL (recommended)
-   DATABASE_URL=postgresql://user:password@localhost/prosculpt
+   DATABASE_URL=postgresql://user:password@localhost/aptiva
 
    # Or SQLite (development)
-   DATABASE_URL=sqlite:///./prosculpt.db
+   DATABASE_URL=sqlite:///./aptiva.db
    ```
 
 3. **Start Backend**

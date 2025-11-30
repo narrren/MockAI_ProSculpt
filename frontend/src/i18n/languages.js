@@ -29,7 +29,7 @@ export const languages = {
     'auth.namePlaceholder': 'Enter your full name',
     
     // App
-    'app.title': 'MockAI ProSculpt',
+    'app.title': 'Aptiva',
     'app.proctoringActive': 'Proctoring Active',
     'app.proctoringOffline': 'Proctoring Offline',
     'app.logout': 'Logout',
@@ -104,7 +104,7 @@ export const languages = {
     'auth.namePlaceholder': 'Ingresa tu nombre completo',
     
     // App
-    'app.title': 'MockAI ProSculpt',
+    'app.title': 'Aptiva',
     'app.proctoringActive': 'Vigilancia Activa',
     'app.proctoringOffline': 'Vigilancia Desconectada',
     'app.logout': 'Cerrar Sesión',
@@ -179,7 +179,7 @@ export const languages = {
     'auth.namePlaceholder': 'Entrez votre nom complet',
     
     // App
-    'app.title': 'MockAI ProSculpt',
+    'app.title': 'Aptiva',
     'app.proctoringActive': 'Surveillance Active',
     'app.proctoringOffline': 'Surveillance Hors Ligne',
     'app.logout': 'Déconnexion',
@@ -254,7 +254,7 @@ export const languages = {
     'auth.namePlaceholder': 'अपना पूरा नाम दर्ज करें',
     
     // App
-    'app.title': 'MockAI ProSculpt',
+    'app.title': 'Aptiva',
     'app.proctoringActive': 'निगरानी सक्रिय',
     'app.proctoringOffline': 'निगरानी ऑफलाइन',
     'app.logout': 'लॉगआउट',

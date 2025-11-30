@@ -1,6 +1,6 @@
-# MockAI ProSculpt
+# Aptiva
 
-A local, low-cost AI-powered technical interview platform with real-time proctoring capabilities. Built with open-source tools to run entirely on your machine without requiring paid APIs.
+AI-Powered Interview Intelligence Platform with real-time proctoring capabilities. Built with open-source tools to provide a comprehensive interview experience.
 
 ## 🎯 Features
 
@@ -154,7 +154,7 @@ PORT=3001 npm start
 ## 🏗️ Project Structure
 
 ```
-MockAI_ProSculpt/
+Aptiva/
 ├── backend/
 │   ├── main.py            # FastAPI server
 │   ├── proctoring.py      # Face/eye detection logic

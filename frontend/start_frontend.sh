@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Starting MockAI ProSculpt Frontend..."
+echo "Starting Aptiva Frontend..."
 echo ""
 npm start
 

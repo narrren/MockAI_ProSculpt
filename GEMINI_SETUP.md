@@ -142,5 +142,5 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## 🎉 You're All Set!
 
-Your MockAI ProSculpt is now powered by Google Gemini! Start interviewing! 🚀
+Your Aptiva platform is now powered by Google Gemini! Start interviewing! 🚀
 

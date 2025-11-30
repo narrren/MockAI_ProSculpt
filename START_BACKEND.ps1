@@ -2,7 +2,7 @@
 # Run this script to start a fresh backend server
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Starting MockAI ProSculpt Backend Server" -ForegroundColor Cyan
+Write-Host "Starting Aptiva Backend Server" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

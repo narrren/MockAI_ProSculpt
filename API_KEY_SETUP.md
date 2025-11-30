@@ -78,5 +78,5 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## 🎉 You're All Set!
 
-Your MockAI ProSculpt is now configured with Google Gemini! Start the backend and frontend to begin interviewing! 🚀
+Your Aptiva platform is now configured with Google Gemini! Start the backend and frontend to begin interviewing! 🚀
 

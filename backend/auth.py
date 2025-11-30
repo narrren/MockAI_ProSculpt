@@ -59,7 +59,7 @@ def send_otp_email(email: str, otp: str) -> bool:
         msg = MIMEMultipart()
         msg['From'] = EMAIL_FROM
         msg['To'] = email
-        msg['Subject'] = "MockAI ProSculpt - OTP Verification"
+        msg['Subject'] = "Aptiva - OTP Verification"
         
         body = f"""<html>
         <head>
@@ -76,7 +76,7 @@ def send_otp_email(email: str, otp: str) -> bool:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>MockAI ProSculpt</h1>
+                    <h1>Aptiva</h1>
                     <p>OTP Verification</p>
                 </div>
                 <div class="content">
@@ -88,7 +88,7 @@ def send_otp_email(email: str, otp: str) -> bool:
                     <p><strong>This OTP will expire in 10 minutes.</strong></p>
                     <p>If you didn't request this OTP, please ignore this email.</p>
                     <div class="footer">
-                        <p>This is an automated email from MockAI ProSculpt.</p>
+                        <p>This is an automated email from Aptiva.</p>
                         <p>Do not reply to this email.</p>
                     </div>
                 </div>

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database URL from environment or default to SQLite for development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./prosculpt.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aptiva.db")
 
 # Create engine
 if DATABASE_URL.startswith("sqlite"):

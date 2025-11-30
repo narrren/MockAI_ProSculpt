@@ -17,7 +17,7 @@ Your `.env` file now has email configuration placeholders. You need to fill in y
    - Click **"App passwords"** (under "Signing in to Google")
    - Select app: **Mail**
    - Select device: **Other (Custom name)**
-   - Enter: **MockAI ProSculpt**
+   - Enter: **Aptiva**
    - Click **Generate**
    - **COPY THE 16-CHARACTER PASSWORD** (you'll see it only once!)
      - It looks like: `abcd efgh ijkl mnop`
@@ -103,7 +103,7 @@ You'll receive beautiful HTML emails with:
 - Professional design
 - Large, easy-to-read OTP code
 - Clear expiration notice (10 minutes)
-- MockAI ProSculpt branding
+- Aptiva branding
 
 **Ready to set up? Follow the steps above!**
 

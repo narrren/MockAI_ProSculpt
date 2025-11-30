@@ -39,7 +39,7 @@ npm start
 ```
 
 ### 3. Login
-- Use test credentials: `test@prosculpt.com` / `test123`
+- Use test credentials: `test@prosculpt.com` / `test123` (unchanged)
 - Or register a new account
 
 ### 4. Features Available After Login

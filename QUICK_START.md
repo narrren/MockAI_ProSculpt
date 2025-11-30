@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide - MockAI ProSculpt
+# 🚀 Quick Start Guide - Aptiva
 
 ## ⚡ Fast Setup (5 minutes)
 

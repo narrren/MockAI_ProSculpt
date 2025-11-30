@@ -14,7 +14,7 @@
    - If you don't see this, make sure 2-Step Verification is enabled first
 3. Select app: **Mail**
 4. Select device: **Other (Custom name)**
-5. Enter name: **MockAI ProSculpt**
+5. Enter name: **Aptiva**
 6. Click **Generate**
 7. **Copy the 16-character password** (it looks like: `abcd efgh ijkl mnop`)
    - ⚠️ You can only see this once! Copy it now!

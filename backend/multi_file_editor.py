@@ -18,7 +18,7 @@ class MultiFileEditor:
     def create_project(self, session_id: str, files: Dict[str, str]) -> Dict:
         """Create a multi-file project"""
         # Create temporary directory
-        project_dir = tempfile.mkdtemp(prefix=f"prosculpt_{session_id}_")
+        project_dir = tempfile.mkdtemp(prefix=f"aptiva_{session_id}_")
         
         # Write files
         file_paths = {}

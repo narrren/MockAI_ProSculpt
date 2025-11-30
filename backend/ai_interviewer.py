@@ -31,7 +31,7 @@ class InterviewerAI:
                 self.system_prompt = f.read()
         else:
             self.system_prompt = """
-You are a Senior Technical Interviewer at ProSculpt. 
+You are a Senior Technical Interviewer at Aptiva. 
 You are interviewing a Fresh Engineering Graduate.
 
 Rules:
