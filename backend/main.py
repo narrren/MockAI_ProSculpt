@@ -285,14 +285,20 @@ async def chat_endpoint(data: ChatMessage):
     response = ai.chat(user_text)
     
     # Increment question count for test accounts (only for AI responses that are questions)
+    # Don't count the initial welcome message - only count actual questions
     if is_test_account and user_email:
         # Check if the response is a question (contains question mark or is asking something)
-        if "?" in response or ai.is_coding_question(response):
+        # Exclude welcome messages and greetings
+        is_welcome = any(phrase in response.lower() for phrase in [
+            "welcome", "hello", "hi there", "greetings", "ready to begin"
+        ])
+        
+        if not is_welcome and ("?" in response or ai.is_coding_question(response)):
             test_account_question_count[user_email] = test_account_question_count.get(user_email, 0) + 1
             print(f"[TEST ACCOUNT] Question count for {user_email}: {test_account_question_count[user_email]}/3")
             
             # If this was the 3rd question, add a note
-            if test_account_question_count[user_email] >= 3:
+            if test_account_question_count[user_email] == 3:
                 response += "\n\n[Note: This is your final question as a test account. After answering, the test interview will be complete.]"
     
     # Detect if the response contains a coding question
