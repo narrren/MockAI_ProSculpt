@@ -481,24 +481,26 @@ function App() {
 
           {/* Interview Rounds */}
           {sessionId && (
-            <InterviewRounds
-              apiUrl={API_URL}
-              userId={user?.email || user?.id || 'user'}
-              onRoundChange={setCurrentRound}
-            />
+            <>
+              <InterviewRounds
+                apiUrl={API_URL}
+                userId={user?.email || user?.id || 'user'}
+                onRoundChange={setCurrentRound}
+              />
+              
+              {/* Analytics Toggle - Right after Interview Rounds */}
+              <div className="analytics-toggle">
+                <button
+                  className="btn btn--primary btn--sm"
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                >
+                  {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                </button>
+              </div>
+            </>
           )}
 
           {/* Video section removed - now floating */}
-
-          {/* Analytics Toggle */}
-          <div className="analytics-toggle">
-            <button
-              className="btn btn--ghost btn--sm"
-              onClick={() => setShowAnalytics(!showAnalytics)}
-            >
-              {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
-            </button>
-          </div>
 
           {/* Analytics Panel */}
           {showAnalytics && sessionId && (
