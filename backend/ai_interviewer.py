@@ -10,7 +10,6 @@ load_dotenv(dotenv_path=env_path)
 class InterviewerAI:
     def __init__(self, system_prompt_path=None):
         self.context = []  # Memory of the conversation
-        # Use gemini-2.5-flash (confirmed available)
         self.model_name = "gemini-2.5-flash"  # Default Gemini model (fast and efficient)
         
         # Get API key from environment variable
@@ -57,19 +56,47 @@ Rules:
                 return "Error: Google Gemini API key not configured. Please set GOOGLE_API_KEY environment variable. Get your API key from https://makersuite.google.com/app/apikey"
             try:
                 genai.configure(api_key=api_key)
+                
                 # Initialize model with system instruction
                 generation_config = {
                     "temperature": 0.7,
                     "top_p": 0.8,
                     "top_k": 40,
                 }
-                self.model = genai.GenerativeModel(
-                    self.model_name,
-                    system_instruction=self.system_prompt,
-                    generation_config=generation_config
-                )
+                
+                # Try to initialize the model
+                try:
+                    self.model = genai.GenerativeModel(
+                        self.model_name,
+                        system_instruction=self.system_prompt,
+                        generation_config=generation_config
+                    )
+                    print(f"[InterviewerAI] Successfully initialized model: {self.model_name}")
+                except Exception as model_error:
+                    print(f"[InterviewerAI] Error with {self.model_name}: {str(model_error)}")
+                    # Try fallback models
+                    fallback_models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+                    for fallback in fallback_models:
+                        try:
+                            print(f"[InterviewerAI] Trying fallback model: {fallback}")
+                            self.model_name = fallback
+                            self.model = genai.GenerativeModel(
+                                self.model_name,
+                                system_instruction=self.system_prompt,
+                                generation_config=generation_config
+                            )
+                            print(f"[InterviewerAI] Successfully initialized fallback model: {self.model_name}")
+                            break
+                        except Exception as fallback_error:
+                            print(f"[InterviewerAI] Fallback {fallback} also failed: {str(fallback_error)}")
+                            continue
+                    else:
+                        return f"Error: Could not initialize any Gemini model. Last error: {str(model_error)}. Please check your API key and model availability."
+                        
             except Exception as e:
-                return f"Error initializing Gemini: {str(e)}"
+                error_msg = f"Error initializing Gemini: {str(e)}"
+                print(f"[InterviewerAI] {error_msg}")
+                return error_msg
         
         try:
             # Build conversation history for Gemini
@@ -91,14 +118,29 @@ Rules:
             print(f"Calling Gemini API with model: {self.model_name}")
             
             # If we have history, use chat, otherwise use generate_content
-            if history:
-                chat = self.model.start_chat(history=history)
-                response = chat.send_message(user_input)
+            if history and len(history) > 0:
+                try:
+                    chat = self.model.start_chat(history=history)
+                    response = chat.send_message(user_input)
+                except Exception as chat_error:
+                    print(f"[InterviewerAI] Chat history failed ({str(chat_error)}), trying direct generation")
+                    # Fallback to direct generation without history
+                    response = self.model.generate_content(user_input)
             else:
                 # First message - use generate_content directly
                 response = self.model.generate_content(user_input)
             
-            ai_reply = response.text
+            # Extract text from response
+            if hasattr(response, 'text'):
+                ai_reply = response.text
+            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                if hasattr(response.candidates[0], 'content'):
+                    ai_reply = response.candidates[0].content.parts[0].text
+                else:
+                    ai_reply = str(response.candidates[0])
+            else:
+                ai_reply = str(response)
+                print(f"[InterviewerAI] Warning: Unexpected response format: {type(response)}")
             
             # Add to context
             self.context.append({'role': 'user', 'parts': [user_input]})
@@ -118,6 +160,27 @@ Rules:
                 error_msg = "Error: API quota exceeded or rate limit reached. Please check your Google Cloud billing and quotas."
             elif "permission" in error_str.lower() or "forbidden" in error_str.lower():
                 error_msg = "Error: API key does not have permission. Please check your API key permissions."
+            elif "404" in error_str or "not found" in error_str.lower():
+                error_msg = f"Error: Model '{self.model_name}' not found. Trying fallback models..."
+                # Try to reinitialize with fallback
+                try:
+                    fallback_models = ["gemini-2.0-flash", "gemini-1.5-flash"]
+                    for fallback in fallback_models:
+                        try:
+                            self.model_name = fallback
+                            self.model = genai.GenerativeModel(self.model_name, system_instruction=self.system_prompt)
+                            print(f"[InterviewerAI] Switched to fallback model: {self.model_name}")
+                            # Retry the request
+                            response = self.model.generate_content(user_input)
+                            ai_reply = response.text if hasattr(response, 'text') else str(response)
+                            self.context.append({'role': 'user', 'parts': [user_input]})
+                            self.context.append({'role': 'model', 'parts': [ai_reply]})
+                            return ai_reply
+                        except:
+                            continue
+                except:
+                    pass
+                error_msg = f"Error: Could not connect to any Gemini model. Please check your API key and internet connection."
             else:
                 error_msg = f"Error connecting to Google Gemini: {error_str}. Please check your API key and internet connection."
             
@@ -221,7 +284,17 @@ Respond in JSON format:
 """
             
             response = self.model.generate_content(evaluation_prompt)
-            feedback_text = response.text
+            
+            # Extract text from response
+            if hasattr(response, 'text'):
+                feedback_text = response.text
+            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                if hasattr(response.candidates[0], 'content'):
+                    feedback_text = response.candidates[0].content.parts[0].text
+                else:
+                    feedback_text = str(response.candidates[0])
+            else:
+                feedback_text = str(response)
             
             # Try to parse JSON from response
             try:
