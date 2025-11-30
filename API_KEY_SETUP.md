@@ -63,7 +63,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### "API key not configured" error
 - Check that `backend/.env` file exists
-- Verify the file contains: `GOOGLE_API_KEY=AIzaSy...`
+- Verify the file contains: `GOOGLE_API_KEY=your_gemini_api_key_here`
 - Make sure there are no extra spaces or quotes
 
 ### "Invalid API key" error
