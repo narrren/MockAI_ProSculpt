@@ -501,11 +501,27 @@ diff-match-patch>=20230430    # Code diff visualization
 | WebSocket | `/ws/video` | Real-time video proctoring | Base64 image frames | `{alerts: [...]}` |
 | POST | `/report_violation` | Report violation | `{type, details, timestamp}` | `{status, message}` |
 
+### Advanced Features Endpoints
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| POST | `/resume/upload` | Upload and parse resume PDF | `file: PDF, user_id?` | `{skills, experience, education, generated_questions}` |
+| POST | `/system-design/analyze` | Analyze system design diagram | `{image_base64, problem_statement}` | `{score, feedback, raw_response}` |
+| POST | `/multi-file/create/{session_id}` | Create multi-file project | `{files: {path: content}, entry_file, language}` | `{project_id, files, project_dir}` |
+| POST | `/multi-file/execute/{session_id}` | Execute multi-file project | `entry_file, language` | `{status, output}` |
+| GET | `/multi-file/tree/{session_id}` | Get file tree structure | - | `{file_tree: [...]}` |
+| POST | `/multi-file/update/{session_id}` | Update file in project | `file_path, content` | `{status, message}` |
+| POST | `/realtime-feedback/check/{session_id}` | Real-time code feedback | `{code, question}` | `{has_issue, feedback, severity?}` |
+| GET | `/leaderboard` | Get global leaderboard | `limit?` | `{leaderboard: [...]}` |
+| GET | `/user/stats/{user_id}` | Get user statistics | - | `{current_streak, longest_streak, total_interviews, best_score}` |
+| POST | `/session/{session_id}/complete` | Complete session | `user_id` | `{status, scores}` |
+
 ### Utility Endpoints
 
 | Method | Endpoint | Description | Request Body | Response |
 |--------|----------|-------------|--------------|----------|
 | GET | `/` | API root/info | - | `{message, status, endpoints}` |
+| GET | `/health` | Backend health check | - | `{status, backend, timestamp}` |
 | GET | `/docs` | Swagger UI | - | HTML documentation |
 
 ---
@@ -712,8 +728,42 @@ EMAIL_PASSWORD=your-app-password
 #### `proctoring.py` (~200 lines)
 - Face detection
 - Violation detection
-- Alert generation
+- Alert generation with cooldowns
 - MediaPipe/OpenCV integration
+- Startup grace period
+- False positive prevention
+
+#### `database.py` (~150 lines)
+- SQLAlchemy models
+- PostgreSQL/SQLite support
+- User, Session, CodeAttempt models
+- ResumeData, Leaderboard models
+
+#### `resume_parser.py` (~120 lines)
+- PDF parsing (pypdf + pdfminer)
+- Skill extraction
+- Experience extraction
+- Question generation
+
+#### `system_design.py` (~80 lines)
+- Gemini Vision integration
+- Architecture analysis
+- Scoring system
+
+#### `multi_file_editor.py` (~100 lines)
+- Multi-file project management
+- File tree navigation
+- Project execution
+
+#### `realtime_feedback.py` (~80 lines)
+- Real-time code analysis
+- Debounced checking
+- Feedback generation
+
+#### `gamification.py` (~100 lines)
+- Leaderboard management
+- Streak tracking
+- User statistics
 
 #### `code_engine.py` (~250 lines)
 - Multi-language code execution
