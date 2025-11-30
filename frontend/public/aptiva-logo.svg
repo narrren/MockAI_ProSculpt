@@ -1,0 +1,22 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="aptivaGradient" x1="90" y1="20" x2="90" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer A shape -->
+  <path d="M90 20 L150 160 H130 L90 70 L50 160 H30 Z" 
+        fill="url(#aptivaGradient)"
+        stroke="#4F46E5"
+        stroke-width="4"
+        stroke-linejoin="round"/>
+  
+  <!-- Inner upward bar -->
+  <path d="M90 95 L110 160 H95 L78 110 Z"
+        fill="#10B981" 
+        opacity="0.9"/>
+</svg>
+

@@ -434,7 +434,7 @@ function App() {
       <div className="topbar">
         <div className="topbar__inner">
           <div className="logo">
-            <div className="logo__mark"></div>
+            <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo__img" />
             <span>{t('app.title')}</span>
           </div>
           <div className="spacer"></div>
