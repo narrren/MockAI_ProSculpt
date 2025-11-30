@@ -159,6 +159,13 @@ async def verify_otp_endpoint(data: OTPVerifyRequest):
 @app.post("/login")
 async def login_endpoint(data: LoginRequest):
     """Login user (test credentials bypass OTP, others require OTP)"""
+    # Debug logging
+    print(f"[API /login] Received login request:")
+    print(f"[API /login] Email: {data.email}")
+    print(f"[API /login] Password: {data.password}")
+    print(f"[API /login] Password type: {type(data.password)}")
+    print(f"[API /login] Password or empty: {data.password or ''}")
+    
     result = login_user(data.email, data.password or "")
     
     # If OTP was generated but email might not have been sent, include OTP in response for testing
