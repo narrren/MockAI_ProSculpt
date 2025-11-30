@@ -51,10 +51,13 @@ html[data-theme="dark"] .personality__card--selected {
   color: var(--text);
   margin-bottom: var(--space-1);
   margin-top: var(--space-1);
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .personality__desc {
