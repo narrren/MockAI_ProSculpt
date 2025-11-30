@@ -6,12 +6,13 @@ import shutil
 import json
 
 
-def execute_python_code(code_snippet, timeout=10):
+def execute_python_code(code_snippet, timeout=10, working_dir=None):
     """
     Execute Python code safely using subprocess with timeout.
     """
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+        cwd = working_dir or tempfile.gettempdir()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8', dir=cwd) as f:
             f.write(code_snippet)
             temp_file = f.name
         
@@ -21,7 +22,7 @@ def execute_python_code(code_snippet, timeout=10):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=tempfile.gettempdir()
+                cwd=cwd
             )
             
             if result.returncode == 0:
@@ -50,7 +51,7 @@ def execute_python_code(code_snippet, timeout=10):
         }
 
 
-def execute_javascript_code(code_snippet, timeout=10):
+def execute_javascript_code(code_snippet, timeout=10, working_dir=None):
     """
     Execute JavaScript code using Node.js.
     """
@@ -63,7 +64,8 @@ def execute_javascript_code(code_snippet, timeout=10):
                 "output": "Node.js is not installed. Please install Node.js to run JavaScript code."
             }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as f:
+        cwd = working_dir or tempfile.gettempdir()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8', dir=cwd) as f:
             f.write(code_snippet)
             temp_file = f.name
         
@@ -73,7 +75,7 @@ def execute_javascript_code(code_snippet, timeout=10):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=tempfile.gettempdir()
+                cwd=cwd
             )
             
             if result.returncode == 0:
@@ -259,20 +261,20 @@ def execute_cpp_code(code_snippet, timeout=15):
         }
 
 
-def execute_code(code_snippet, language="python", timeout=10):
+def execute_code(code_snippet, language="python", timeout=10, working_dir=None):
     """
     Execute code in the specified language.
     """
     language = language.lower()
     
     if language == "python":
-        return execute_python_code(code_snippet, timeout)
+        return execute_python_code(code_snippet, timeout, working_dir)
     elif language == "javascript" or language == "js":
-        return execute_javascript_code(code_snippet, timeout)
+        return execute_javascript_code(code_snippet, timeout, working_dir)
     elif language == "java":
-        return execute_java_code(code_snippet, timeout)
+        return execute_java_code(code_snippet, timeout, working_dir)
     elif language == "cpp" or language == "c++":
-        return execute_cpp_code(code_snippet, timeout)
+        return execute_cpp_code(code_snippet, timeout, working_dir)
     else:
         return {
             "status": "error",

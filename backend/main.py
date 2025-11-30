@@ -12,14 +12,21 @@ from interview_session import InterviewSession, active_sessions
 from analytics import AnalyticsEngine
 from personalities import get_personality_prompt, get_personality_info, list_personalities
 from code_revision import CodeRevision
+from database import init_db, get_db, User, InterviewSession as DBSession, ResumeData, Leaderboard
+from resume_parser import ResumeParser
+from system_design import SystemDesignAnalyzer
+from multi_file_editor import MultiFileEditor
+from realtime_feedback import RealtimeFeedback
+from gamification import GamificationEngine
 import cv2
 import numpy as np
 import base64
 import os
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import time
 from datetime import datetime
+import tempfile
 
 
 app = FastAPI()
@@ -42,6 +49,13 @@ print(f"InterviewerAI initialized with model: {ai.model_name}")
 print("=" * 50)
 proctor = Proctor()
 code_revision = CodeRevision()
+resume_parser = ResumeParser()
+system_design_analyzer = SystemDesignAnalyzer()
+multi_file_editor = MultiFileEditor()
+realtime_feedback = RealtimeFeedback()
+
+# Initialize database
+init_db()
 
 
 class ChatMessage(BaseModel):
@@ -435,6 +449,171 @@ async def get_career_blueprint(user_id: str):
     session.recommendations = blueprint.get("recommendations", [])
     
     return blueprint
+
+
+# ===== Advanced Features Endpoints =====
+
+@app.post("/resume/upload")
+async def upload_resume(file: UploadFile = File(...), user_id: int = None):
+    """Upload and parse resume PDF"""
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
+        
+        # Parse resume
+        result = resume_parser.parse_pdf(tmp_path)
+        
+        # Save to database
+        if user_id and not result.get("error"):
+            db = next(get_db())
+            try:
+                resume_data = db.query(ResumeData).filter(ResumeData.user_id == user_id).first()
+                if resume_data:
+                    resume_data.skills = result["skills"]
+                    resume_data.experience = result["experience"]
+                    resume_data.education = result["education"]
+                    resume_data.raw_text = result["raw_text"]
+                else:
+                    resume_data = ResumeData(
+                        user_id=user_id,
+                        skills=result["skills"],
+                        experience=result["experience"],
+                        education=result["education"],
+                        raw_text=result["raw_text"]
+                    )
+                    db.add(resume_data)
+                db.commit()
+            finally:
+                db.close()
+        
+        # Generate interview questions
+        questions = resume_parser.generate_interview_questions(
+            result.get("skills", []),
+            result.get("experience", [])
+        )
+        
+        # Cleanup
+        os.unlink(tmp_path)
+        
+        return {
+            "status": "success",
+            "skills": result.get("skills", []),
+            "experience": result.get("experience", []),
+            "education": result.get("education", []),
+            "generated_questions": questions
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@app.post("/system-design/analyze")
+async def analyze_system_design(request: SystemDesignRequest):
+    """Analyze system design diagram using Gemini Vision"""
+    result = system_design_analyzer.analyze_design(
+        request.image_base64,
+        request.problem_statement
+    )
+    return result
+
+
+@app.post("/multi-file/create")
+async def create_multi_file_project(request: MultiFileProjectRequest, session_id: str):
+    """Create a multi-file code project"""
+    result = multi_file_editor.create_project(session_id, request.files)
+    return result
+
+
+@app.post("/multi-file/execute")
+async def execute_multi_file_project(session_id: str, entry_file: str, language: str):
+    """Execute a multi-file project"""
+    result = multi_file_editor.execute_project(session_id, entry_file, language)
+    return result
+
+
+@app.get("/multi-file/tree/{session_id}")
+async def get_file_tree(session_id: str):
+    """Get file tree structure"""
+    tree = multi_file_editor.get_file_tree(session_id)
+    return {"file_tree": tree}
+
+
+@app.post("/multi-file/update")
+async def update_file(session_id: str, file_path: str, content: str):
+    """Update a file in the project"""
+    result = multi_file_editor.update_file(session_id, file_path, content)
+    return result
+
+
+@app.post("/realtime-feedback/check")
+async def check_realtime_feedback(request: RealtimeCodeCheckRequest, session_id: str):
+    """Check code for real-time feedback"""
+    result = realtime_feedback.check_code(
+        session_id,
+        request.code,
+        request.question
+    )
+    if result:
+        return result
+    return {"has_issue": False}
+
+
+@app.get("/leaderboard")
+async def get_leaderboard(limit: int = 10):
+    """Get global leaderboard"""
+    leaderboard = GamificationEngine.get_leaderboard(limit)
+    return {"leaderboard": leaderboard}
+
+
+@app.get("/user/stats/{user_id}")
+async def get_user_stats(user_id: int):
+    """Get user statistics and streaks"""
+    db = next(get_db())
+    try:
+        stats = GamificationEngine.get_user_stats(user_id, db)
+        return stats
+    finally:
+        db.close()
+
+
+@app.post("/session/{session_id}/complete")
+async def complete_session(session_id: str, user_id: int):
+    """Complete session and update leaderboard/streaks"""
+    db = next(get_db())
+    try:
+        # Get session
+        session = active_sessions.get(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Calculate scores
+        scores = {
+            "overall": (
+                session.skill_scores.get("problem_solving", 0) +
+                session.skill_scores.get("communication", 0) +
+                session.skill_scores.get("coding_quality", 0)
+            ) / 3,
+            "coding": session.skill_scores.get("coding_quality", 0),
+            "communication": session.skill_scores.get("communication", 0),
+            "integrity": session.integrity_score
+        }
+        
+        # Add to leaderboard
+        db_session = db.query(DBSession).filter(DBSession.session_id == session_id).first()
+        if db_session:
+            GamificationEngine.add_to_leaderboard(user_id, db_session.id, scores, db)
+        
+        # Update streak
+        GamificationEngine.update_streak(user_id, db)
+        
+        return {"status": "success", "scores": scores}
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":
