@@ -18,6 +18,7 @@ import InterviewRounds from './components/InterviewRounds';
 import IntegrityScore from './components/IntegrityScore';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import speechService from './services/speechService';
 import { t } from './i18n/languages';
 import './App.css';
 
@@ -68,6 +69,7 @@ function App() {
   const [windowBlurCount, setWindowBlurCount] = useState(0);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
   const [isVideoMinimized, setIsVideoMinimized] = useState(false);
+  const [isInterviewerMuted, setIsInterviewerMuted] = useState(false);
   const [currentCodingQuestion, setCurrentCodingQuestion] = useState(null);
   const [suggestedLanguage, setSuggestedLanguage] = useState('python');
   const [captchaVerified, setCaptchaVerified] = useState(false);
