@@ -97,10 +97,16 @@ MockAI_ProSculpt/
 │   ├── auth.py                       # Authentication & OTP system
 │   ├── code_engine.py                 # Multi-language code execution
 │   ├── code_revision.py               # AI-powered code improvement
+│   ├── database.py                   # PostgreSQL/SQLAlchemy models
+│   ├── gamification.py                # Leaderboard & streak tracking
 │   ├── interview_session.py           # Session management & tracking
 │   ├── main.py                       # FastAPI application & routes
+│   ├── multi_file_editor.py           # Multi-file project support
 │   ├── personalities.py               # Interviewer personality system
 │   ├── proctoring.py                 # Face detection & proctoring
+│   ├── realtime_feedback.py           # Real-time code feedback
+│   ├── resume_parser.py              # PDF resume parsing
+│   ├── system_design.py               # System design analysis (Gemini Vision)
 │   ├── requirements.txt              # Python dependencies
 │   ├── start_backend.bat             # Windows startup script
 │   ├── start_backend.sh              # Linux/Mac startup script
@@ -261,11 +267,18 @@ diff-match-patch>=20230430    # Code diff visualization
 - **Key Features**:
   - Face detection (MediaPipe or OpenCV fallback)
   - Head pose estimation
-  - Eye closure detection
+  - Eye closure detection (with cooldown)
   - Multiple face detection
-  - Face distance monitoring
-  - Alert cooldown system
+  - Face distance monitoring (with cooldown)
+  - Alert cooldown system (10 seconds)
+  - Startup grace period (15 seconds - no alerts during initialization)
+  - False positive prevention
 - **Technologies**: MediaPipe (preferred), OpenCV (fallback)
+- **Alert System**: 
+  - 10-second cooldown between alerts
+  - 15-second startup grace period
+  - Deduplication to prevent spam
+  - Configurable thresholds
 
 #### 5. `code_engine.py` - Code Execution Engine
 - **Purpose**: Safe execution of code in multiple languages
