@@ -17,8 +17,8 @@ users_db = {}
 otp_storage = {}
 
 # Test credentials that bypass OTP
-TEST_EMAIL = "test@prosculpt.com"
-TEST_PASSWORD = "test123"  # Hashed in production
+TEST_EMAIL = "test@aptiva.ai"
+TEST_PASSWORD = "aptivatesting"  # Hashed in production
 TEST_NAME = "Test Interviewer"
 
 # Email configuration (using Gmail SMTP - update with your credentials)

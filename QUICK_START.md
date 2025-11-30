@@ -82,7 +82,7 @@
    - Login page should appear
 
 3. **Test login:**
-   - Use test credentials: `test@prosculpt.com` / `test123`
+   - Use test credentials: `test@aptiva.ai` / `aptivatesting`
    - Or register a new account
 
 ## 🎯 Troubleshooting

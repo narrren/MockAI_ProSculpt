@@ -694,7 +694,7 @@ EMAIL_PASSWORD=your-app-password
 
 ### Test Credentials
 
-- **Email**: `test@prosculpt.com`
+- **Email**: `test@aptiva.ai`
 - **Password**: `test123`
 - **Note**: Bypasses OTP verification
 

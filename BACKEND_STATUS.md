@@ -9,7 +9,7 @@ The backend server is running on port 8000 and responding correctly.
 ### Login Endpoint Test
 ```bash
 POST http://localhost:8000/login
-Body: {"email":"test@prosculpt.com","password":"test123"}
+Body: {"email":"test@aptiva.ai","password":"aptivatesting"}
 
 Response: 200 OK
 {
@@ -42,7 +42,7 @@ Response: 200 OK
 
 3. Test login endpoint:
    ```powershell
-   $body = '{"email":"test@prosculpt.com","password":"test123"}'
+   $body = '{"email":"test@aptiva.ai","password":"aptivatesting"}'
    Invoke-RestMethod -Uri http://localhost:8000/login -Method POST -Body $body -ContentType 'application/json'
    ```
 

@@ -4,7 +4,7 @@
 
 For testing purposes, you can use these credentials to login without OTP verification:
 
-- **Email**: `test@prosculpt.com`
+- **Email**: `test@aptiva.ai`
 - **Password**: `test123`
 
 **Note**: This account bypasses OTP verification and logs in directly. Only you (the developer) should know these credentials.

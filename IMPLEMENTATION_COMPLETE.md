@@ -39,7 +39,7 @@ npm start
 ```
 
 ### 3. Login
-- Use test credentials: `test@prosculpt.com` / `test123` (unchanged)
+- Use test credentials: `test@aptiva.ai` / `aptivatesting`
 - Or register a new account
 
 ### 4. Features Available After Login
