@@ -12,7 +12,14 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: 70dvh;
+  max-height: 85dvh;
+  min-height: 600px;
+}
+
+.chat--min .chat__panel {
+  min-height: auto;
+  max-height: none;
+  height: auto;
 }
 
 .chat__header {
@@ -23,6 +30,11 @@
   padding: 12px;
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
   border-bottom: 1px solid var(--gray-200);
+}
+
+.chat__title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
 }
 
 .chat__header-actions {
@@ -79,13 +91,14 @@
 }
 
 .chat__body {
-  padding: 12px;
+  padding: 0 12px 12px;
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex: 1;
-  max-height: 48dvh;
+  min-height: 200px;
+  max-height: 250px;
 }
 
 .chat__loading {
@@ -133,6 +146,8 @@
   border: 1px solid var(--gray-200);
   box-shadow: var(--shadow-sm);
   word-wrap: break-word;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-n);
 }
 
 .msg--ai .msg__bubble {
@@ -166,22 +181,30 @@ html[data-theme="dark"] .msg--me .msg__bubble {
   padding: 10px;
   border-top: 1px solid var(--gray-200);
   background: var(--surface);
+  flex-shrink: 0;
+  min-height: 60px;
 }
 
 .chat__input {
   flex: 1;
+  min-width: 0;
+  font-size: var(--fs-xs);
 }
 
 .voice-btn {
   border-radius: 999px;
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   display: grid;
   place-items: center;
   border: 1px solid var(--gray-300);
   background: var(--surface-2);
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .voice-btn:hover {
@@ -192,6 +215,18 @@ html[data-theme="dark"] .msg--me .msg__bubble {
   background: rgba(20, 184, 166, 0.18);
   border-color: var(--accent-500);
   box-shadow: var(--ring);
+}
+
+.voice-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ensure Send button is visible */
+.chat__inputbar .btn {
+  flex-shrink: 0;
+  min-width: 70px;
+  white-space: nowrap;
 }
 
 .subtitle {
@@ -209,7 +244,14 @@ html[data-theme="dark"] .msg--me .msg__bubble {
 }
 
 .chat__avatar-section {
-  padding: 12px;
-  border-bottom: 1px solid var(--gray-200);
-  background: var(--surface-2);
+  padding: var(--space-2) var(--space-2) 0;
+  border-bottom: none;
+  background: transparent;
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 0;
 }

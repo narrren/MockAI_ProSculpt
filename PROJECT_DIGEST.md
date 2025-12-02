@@ -52,6 +52,10 @@
 | **Python-dotenv** | 1.0.0+ | Environment variable management |
 | **Email Validator** | 2.0.0+ | Email format validation |
 | **Python-multipart** | 0.0.6+ | File upload support |
+| **httpx** | 0.24.0+ | Async HTTP client for HeyGen API |
+| **SQLAlchemy** | 2.0.0+ | Database ORM |
+| **pypdf** | 3.17.0+ | PDF parsing |
+| **pdfminer.six** | 20221105+ | PDF text extraction |
 
 ### Frontend Technologies
 
@@ -64,6 +68,7 @@
 | **Monaco Editor** | 4.6.0 | VS Code-like code editor |
 | **React Webcam** | 7.2.0 | Webcam access and capture |
 | **Socket.io Client** | 4.6.1 | WebSocket client (not actively used) |
+| **LiveKit Client** | Latest | Real-time video streaming for HeyGen avatar |
 
 ### Development Tools
 
@@ -82,6 +87,8 @@
 | **Google Gemini API** | AI interviewer responses |
 | **SMTP (Gmail/Outlook)** | Email OTP delivery |
 | **Browser Web Speech API** | Text-to-speech and speech-to-text |
+| **HeyGen API** | Real-time video avatar with lip-sync |
+| **LiveKit** | WebRTC video streaming infrastructure |
 
 ---
 
@@ -127,7 +134,10 @@ Aptiva/
 │   │   │   ├── CommunicationMetrics.js/css # Communication analysis
 │   │   │   ├── FloatingVideo.css     # Floating video styles
 │   │   │   ├── IntegrityScore.js/css  # Integrity score display
-│   │   │   ├── InterviewerAvatar.js/css # AI interviewer avatar
+│   │   │   ├── InterviewerAvatar.js/css # HeyGen video avatar with lip-sync
+│   │   │   ├── Profile.js/css # User profile and resume management
+│   │   │   ├── ResumeUpload.js/css # Resume upload component
+│   │   │   ├── ResumeViewer.js/css # Resume viewing modal
 │   │   │   ├── InterviewRounds.js/css # Multi-round tracking
 │   │   │   ├── LanguageSelector.js/css # Language switcher
 │   │   │   ├── PersonalitySelector.js/css # Interviewer style selector
@@ -203,6 +213,10 @@ email-validator>=2.0.0        # Email validation
 python-dotenv>=1.0.0          # Environment variables
 reportlab>=4.0.0              # PDF generation (certificates)
 diff-match-patch>=20230430    # Code diff visualization
+httpx>=0.24.0                 # Async HTTP client for HeyGen API
+sqlalchemy>=2.0.0             # Database ORM
+pypdf>=3.17.0                 # PDF parsing
+pdfminer.six>=20221105        # PDF text extraction
 ```
 
 ### Frontend Dependencies (`frontend/package.json`)
@@ -216,7 +230,8 @@ diff-match-patch>=20230430    # Code diff visualization
     "react-dom": "^18.2.0",                 // React rendering
     "react-scripts": "5.0.1",               // Build tools
     "react-webcam": "^7.2.0",               // Webcam access
-    "socket.io-client": "^4.6.1"            // WebSocket client
+    "socket.io-client": "^4.6.1",            // WebSocket client
+    "livekit-client": "latest"               // LiveKit for HeyGen video streaming
   }
 }
 ```
@@ -318,11 +333,8 @@ diff-match-patch>=20230430    # Code diff visualization
 #### 8. `personalities.py` - Personality System
 - **Purpose**: Different interviewer styles for varied experiences
 - **Available Personalities**:
-  - Professional (default)
-  - Tough FAANG
-  - Friendly HR-style
-  - Rapid-fire Competitive
-  - Technical Architect
+  - Professional (default) - Comprehensive, structured interviews with detailed feedback
+  - Rapid-Fire - Fast-paced, competitive style with quick questions
 - **Features**: Dynamic prompt switching based on personality
 
 #### 9. `code_revision.py` - Code Revision System
@@ -397,12 +409,15 @@ diff-match-patch>=20230430    # Code diff visualization
 - **Library**: `@monaco-editor/react`
 
 #### 4. `InterviewerAvatar.js`
-- **Purpose**: Display AI interviewer avatar
+- **Purpose**: Display realistic AI interviewer avatar using HeyGen
 - **Features**:
-  - Speaking animation
-  - Status indicators
-  - Subtitle overlay
-  - Professional design
+  - HeyGen video streaming integration
+  - Real-time lip-sync with speech
+  - LiveKit WebRTC connection
+  - Automatic fallback to browser TTS
+  - Error handling and retry logic
+  - Session management
+  - Professional landscape video display
 
 #### 5. `AlertFlash.js`
 - **Purpose**: Full-screen flash alerts
@@ -505,7 +520,15 @@ diff-match-patch>=20230430    # Code diff visualization
 
 | Method | Endpoint | Description | Request Body | Response |
 |--------|----------|-------------|--------------|----------|
-| POST | `/resume/upload` | Upload and parse resume PDF | `file: PDF, user_id?` | `{skills, experience, education, generated_questions}` |
+| POST | `/resume/upload` | Upload and parse resume PDF | `file: PDF, user_id` | `{skills, experience, education, generated_questions, analysis}` |
+| GET | `/user/{user_id}/profile` | Get user profile and resume | - | `{name, email, has_resume, resume?}` |
+| GET | `/user/{user_id}/resume-status` | Check if user has resume | - | `{has_resume: bool}` |
+| DELETE | `/user/{user_id}/resume` | Delete user's resume | - | `{status, message}` |
+| POST | `/api/heygen/token` | Get HeyGen session token | - | `{token}` |
+| POST | `/api/heygen/start` | Start HeyGen streaming session | `{avatar_id?}` | `{session_id, sdp_answer}` |
+| POST | `/api/heygen/stop` | Stop HeyGen session | `{session_id}` | `{status}` |
+| POST | `/api/heygen/stop-all` | Stop all HeyGen sessions | - | `{status}` |
+| POST | `/api/heygen/task` | Send text to HeyGen avatar | `{session_id, text, task_type}` | `{status, data}` |
 | POST | `/system-design/analyze` | Analyze system design diagram | `{image_base64, problem_statement}` | `{score, feedback, raw_response}` |
 | POST | `/multi-file/create/{session_id}` | Create multi-file project | `{files: {path: content}, entry_file, language}` | `{project_id, files, project_dir}` |
 | POST | `/multi-file/execute/{session_id}` | Execute multi-file project | `entry_file, language` | `{status, output}` |
@@ -533,9 +556,12 @@ diff-match-patch>=20230430    # Code diff visualization
 - ✅ User registration with email verification
 - ✅ Login with OTP verification
 - ✅ Test credentials bypass (for testing)
+- ✅ Test account question limiting (3 questions max)
 - ✅ Session token management
 - ✅ CAPTCHA verification (human check)
 - ✅ Always require login on page refresh
+- ✅ URL encoding for user IDs in API calls
+- ✅ Backend proxy endpoints for secure API key usage
 
 ### 2. AI Interviewer
 - ✅ Google Gemini 2.5 Flash integration
@@ -574,16 +600,17 @@ diff-match-patch>=20230430    # Code diff visualization
 - ✅ Automatic language detection
 
 ### 5. User Interface
-- ✅ Modern, elegant design
-- ✅ Responsive layout
-- ✅ Glassmorphism effects
-- ✅ Animations and transitions
-- ✅ Dark theme code editor
-- ✅ Floating chatbox
-- ✅ Minimize/maximize chat
-- ✅ Flash alerts (auto-dismiss)
-- ✅ Interviewer avatar with animations
-- ✅ Subtitles for AI speech
+- ✅ Modern, professional design system
+- ✅ Enterprise-friendly color system
+- ✅ CSS design tokens (spacing, typography, colors)
+- ✅ Responsive layout with 8px grid system
+- ✅ Dark mode only (professional appearance)
+- ✅ Floating chatbox with minimize/maximize
+- ✅ Floating video feed
+- ✅ Flash alerts (non-blocking, auto-dismiss after 5 seconds)
+- ✅ Realistic HeyGen video avatar with lip-sync
+- ✅ Compact, professional component styling
+- ✅ Timeline-based interview rounds display
 
 ### 6. Speech Features
 - ✅ Text-to-speech (AI responses)
@@ -599,12 +626,9 @@ diff-match-patch>=20230430    # Code diff visualization
   - Recommended courses with timelines
   - Job role compatibility scoring
   - Estimated improvement timeline
-- ✅ **Personality Simulation Mode**: 5 interviewer styles
-  - Professional (default)
-  - Tough FAANG
-  - Friendly HR-style
-  - Rapid-fire Competitive
-  - Technical Architect
+- ✅ **Personality Simulation Mode**: 2 interviewer styles
+  - Professional (default) - Comprehensive, structured interviews
+  - Rapid-Fire - Fast-paced, competitive style
 - ✅ **Real-time Skill Heatmap**: Live analytics visualization
   - Problem-solving score
   - Communication score
@@ -658,11 +682,36 @@ diff-match-patch>=20230430    # Code diff visualization
 - ✅ Centralized translations
 
 ### 8. Email System
-- ✅ SMTP email sending
+- ✅ SMTP email sending (Gmail App Password support)
 - ✅ HTML email templates
 - ✅ OTP delivery
 - ✅ Configurable email providers
 - ✅ Console fallback (if email not configured)
+- ✅ Dynamic .env reloading for email configuration
+
+### 9. Resume Management
+- ✅ PDF resume upload
+- ✅ AI-powered resume parsing
+- ✅ Skill extraction
+- ✅ Experience and education extraction
+- ✅ Certifications and projects extraction
+- ✅ Contact information extraction
+- ✅ Career level analysis
+- ✅ Resume viewing modal
+- ✅ Profile section with resume management
+- ✅ Resume persistence across logins
+- ✅ Test user bypass (no resume required)
+
+### 10. Avatar System
+- ✅ HeyGen video streaming integration
+- ✅ Real-time lip-sync with speech
+- ✅ LiveKit WebRTC connection
+- ✅ Automatic browser TTS fallback
+- ✅ Error handling (quota limits, API errors)
+- ✅ Session cleanup and management
+- ✅ Landscape video display
+- ✅ Professional avatar appearance
+- ✅ Speech queueing to prevent overlap
 
 ---
 
@@ -674,12 +723,17 @@ diff-match-patch>=20230430    # Code diff visualization
 # Google Gemini API
 GOOGLE_API_KEY=your_gemini_api_key_here
 
+# HeyGen API (for video avatar)
+HEYGEN_API_KEY=your_heygen_api_key_here
+
 # Email Configuration
 ENABLE_EMAIL=true
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 EMAIL_FROM=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password
+# Note: For Gmail, use App Password (not regular password)
+# Enable 2-Step Verification first, then generate App Password
 ```
 
 ### Frontend Configuration
@@ -906,15 +960,15 @@ EMAIL_PASSWORD=your-app-password
 
 ## 📊 Statistics
 
-- **Total Files**: ~50+ files
-- **Backend Lines**: ~1,500+ lines
-- **Frontend Lines**: ~3,000+ lines
-- **Components**: 8 React components
+- **Total Files**: ~60+ files
+- **Backend Lines**: ~2,000+ lines
+- **Frontend Lines**: ~4,000+ lines
+- **Components**: 15+ React components
 - **Pages**: 2 pages (Login, Signup)
-- **API Endpoints**: 15+ endpoints
+- **API Endpoints**: 25+ endpoints
 - **Supported Languages**: 5 programming languages
 - **UI Languages**: 4 languages
-- **Dependencies**: 12 backend, 7 frontend
+- **Dependencies**: 20+ backend, 8+ frontend
 
 ---
 
@@ -952,9 +1006,9 @@ EMAIL_PASSWORD=your-app-password
   - Email OTP
   - CAPTCHA verification
 
-- **v0.2.0**: Premium Features Release (Current)
+- **v0.2.0**: Premium Features Release
   - AI Interview Blueprint (career roadmap)
-  - Personality Simulation Mode (5 styles)
+  - Personality Simulation Mode (2 styles: Professional, Rapid-Fire)
   - Real-time Skill Heatmap
   - AI-Guided Code Revision
   - Micro-Proctoring Insights Dashboard
@@ -963,15 +1017,34 @@ EMAIL_PASSWORD=your-app-password
   - Multi-Round Interview Flow
   - Interview Session Management
   - Floating UI components (video + chat)
-  - Dark/Light theme toggle
   - Backend health check endpoint
   - Enhanced analytics engine
   - Code diff visualization
 
+- **v0.3.0**: UI Revamp & Avatar Integration (Current)
+  - Modern CSS design system with design tokens
+  - Enterprise-friendly color system
+  - Dark mode only (removed light/dark toggle)
+  - HeyGen video avatar integration
+  - Real-time lip-sync with speech
+  - LiveKit WebRTC streaming
+  - Resume upload and profile management
+  - AI-powered resume parsing
+  - Profile section with resume viewing/editing
+  - Test account question limiting
+  - Improved error handling (Windows encoding, HeyGen API)
+  - Backend proxy endpoints for HeyGen API
+  - Speech queueing to prevent overlap
+  - Avatar positioning and cropping fixes
+  - Chat minimize/maximize functionality
+  - Removed subtitles for cleaner UI
+  - Compact, professional component styling
+  - Timeline-based interview rounds
+
 ---
 
-**Last Updated**: November 30, 2025
-**Project Status**: Active Development - Premium Features Complete
+**Last Updated**: December 2, 2025
+**Project Status**: Active Development - UI Revamp & Avatar Integration Complete
 **License**: Open Source (Educational)
 
 ---

@@ -5,9 +5,12 @@ AI-Powered Interview Intelligence Platform with real-time proctoring capabilitie
 ## 🎯 Features
 
 - **AI-Powered Interviewer**: Uses Google Gemini for intelligent, contextual interviews
+- **Realistic Video Avatar**: HeyGen integration with real-time lip-sync and expressions
 - **Real-Time Proctoring**: MediaPipe + OpenCV for face detection, gaze tracking, and violation alerts
-- **Code Execution Engine**: Safe Python code execution with timeout protection
-- **Modern UI**: React-based interface with Monaco code editor (VS Code-like experience)
+- **Code Execution Engine**: Multi-language code execution (Python, JavaScript, Java, C++, C) with timeout protection
+- **Modern UI**: Professional design system with dark mode, floating components, and responsive layout
+- **Resume Management**: AI-powered resume parsing, profile management, and career analysis
+- **Analytics Dashboard**: Real-time skill tracking, communication metrics, and career blueprint
 - **WebSocket Communication**: Real-time video streaming and proctoring alerts
 
 ## 🛠️ Tech Stack
@@ -15,15 +18,21 @@ AI-Powered Interview Intelligence Platform with real-time proctoring capabilitie
 ### Backend
 - **FastAPI**: High-performance async API server
 - **Google Gemini**: Cloud-based AI model for interviewer responses
+- **HeyGen API**: Real-time video avatar generation
+- **LiveKit**: WebRTC infrastructure for video streaming
 - **MediaPipe**: Face detection and tracking
 - **OpenCV**: Computer vision processing
+- **SQLAlchemy**: Database ORM (SQLite/PostgreSQL)
+- **httpx**: Async HTTP client for API calls
 - **Python 3.10+**: Backend language
 
 ### Frontend
 - **React 18**: UI framework
 - **Monaco Editor**: VS Code-like code editor
 - **React Webcam**: Webcam access
+- **LiveKit Client**: Real-time video streaming
 - **Axios**: HTTP client
+- **Modern CSS**: Design tokens, dark mode, responsive layout
 
 ## 📋 Prerequisites
 
@@ -32,16 +41,32 @@ Before you begin, ensure you have:
 1. **Python 3.10+** installed
 2. **Node.js 16+** and npm installed
 3. **Google Gemini API Key** ([Get it here](https://makersuite.google.com/app/apikey))
-4. **Webcam** for proctoring features
+4. **HeyGen API Key** (optional, for video avatar - [Get it here](https://www.heygen.com/))
+5. **Gmail Account** with App Password (for email OTP - see [SETUP_APP_PASSWORD.md](SETUP_APP_PASSWORD.md))
+6. **Webcam** for proctoring features
 
 ## 🚀 Setup Instructions
 
-### Step 1: Get Google Gemini API Key
+### Step 1: Get API Keys
 
+**Google Gemini API Key:**
 1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
 4. Copy your API key
+
+**HeyGen API Key (Optional - for video avatar):**
+1. Go to [HeyGen](https://www.heygen.com/)
+2. Sign up for an account
+3. Navigate to API settings
+4. Generate an API key
+5. Note: Free tier has quota limits
+
+**Email Setup (for OTP):**
+1. See [SETUP_APP_PASSWORD.md](SETUP_APP_PASSWORD.md) for detailed instructions
+2. Enable 2-Step Verification on your Gmail account
+3. Generate an App Password
+4. Use the App Password in `backend/.env`
 
 ### Step 2: Backend Setup
 
@@ -82,18 +107,30 @@ Before you begin, ensure you have:
 
 You need to run two services simultaneously:
 
-### Step 1: Configure API Key
+### Step 1: Configure Environment Variables
 
 Create a `.env` file in the `backend` directory:
 ```bash
 cd backend
-echo GOOGLE_API_KEY=your_api_key_here > .env
 ```
 
-Or set it as an environment variable:
-- **Windows PowerShell**: `$env:GOOGLE_API_KEY="your_api_key_here"`
-- **Windows CMD**: `set GOOGLE_API_KEY=your_api_key_here`
-- **Linux/Mac**: `export GOOGLE_API_KEY=your_api_key_here`
+Create `.env` file with:
+```env
+# Google Gemini API
+GOOGLE_API_KEY=your_gemini_api_key_here
+
+# HeyGen API (optional - for video avatar)
+HEYGEN_API_KEY=your_heygen_api_key_here
+
+# Email Configuration (for OTP)
+ENABLE_EMAIL=true
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_FROM=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password-here
+```
+
+**Note**: For Gmail, use an App Password (not your regular password). See [SETUP_APP_PASSWORD.md](SETUP_APP_PASSWORD.md) for instructions.
 
 ### Terminal 1: Backend Server
 ```bash
@@ -177,16 +214,24 @@ Aptiva/
 
 ## 🔧 Configuration
 
+### Test Credentials
+
+For testing purposes, use:
+- **Email**: `test@aptiva.ai`
+- **Password**: `aptivatesting`
+- **Note**: Test account bypasses OTP and has a 3-question limit
+
 ### Changing the AI Model
 
 Edit `backend/ai_interviewer.py`:
 ```python
-self.model_name = "gemini-pro"  # or "gemini-pro-vision" for multimodal
+self.model_name = "gemini-2.0-flash-exp"  # Current default
 ```
 
 Available Gemini models:
-- `gemini-pro`: Text-only model (default)
-- `gemini-pro-vision`: Multimodal model (text + images)
+- `gemini-2.0-flash-exp`: Latest experimental model (default)
+- `gemini-2.0-flash`: Stable flash model
+- `gemini-1.5-flash`: Previous generation
 
 ### Adjusting Proctoring Sensitivity
 
@@ -206,10 +251,24 @@ Edit `backend/proctoring.py` to modify thresholds:
 ## 🐛 Troubleshooting
 
 ### Google Gemini API Error
-- Ensure `GOOGLE_API_KEY` is set in environment variables or `.env` file
+- Ensure `GOOGLE_API_KEY` is set in `backend/.env` file
 - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - Check API quota and billing in Google Cloud Console
 - Verify internet connection (Gemini requires internet access)
+- Restart backend after updating `.env` file
+
+### HeyGen Avatar Not Loading
+- Ensure `HEYGEN_API_KEY` is set in `backend/.env` file
+- Check HeyGen account quota (free tier has limits)
+- Avatar will automatically fall back to browser TTS if HeyGen fails
+- See [HEYGEN_SETUP.md](HEYGEN_SETUP.md) for detailed setup instructions
+
+### Email OTP Not Sending
+- Ensure `EMAIL_FROM` and `EMAIL_PASSWORD` are set in `backend/.env`
+- For Gmail, use App Password (not regular password)
+- Enable 2-Step Verification on Gmail account first
+- See [SETUP_APP_PASSWORD.md](SETUP_APP_PASSWORD.md) for instructions
+- Restart backend after updating email configuration
 
 ### Webcam Not Working
 - Grant browser camera permissions
@@ -250,15 +309,26 @@ Edit `backend/proctoring.py` to modify thresholds:
 3. **Input Validation**: Add more robust input validation.
 4. **Rate Limiting**: Implement rate limiting for API endpoints.
 
+## ✨ Recent Updates (v0.3.0)
+
+- ✅ **UI Revamp**: Modern design system with CSS tokens, dark mode only
+- ✅ **HeyGen Avatar**: Realistic video avatar with real-time lip-sync
+- ✅ **Resume Management**: Upload, parse, and manage resumes with AI analysis
+- ✅ **Profile Section**: View and edit profile, manage resumes
+- ✅ **Test Account Limits**: 3-question limit for test users
+- ✅ **Improved Error Handling**: Better error messages and fallbacks
+- ✅ **Speech Queueing**: Prevents overlap between avatar and browser TTS
+- ✅ **Compact UI**: Professional, space-efficient component design
+
 ## 🚧 Future Enhancements
 
 - [ ] Docker containerization for code execution
 - [ ] SQL query execution with sample databases
 - [ ] Audio integrity monitoring (whisper detection)
 - [ ] System design diagramming (Excalidraw integration)
-- [ ] Multiple programming language support
 - [ ] Interview session recording and playback
-- [ ] Performance analytics dashboard
+- [ ] Enhanced analytics dashboard
+- [ ] Multi-language interview support
 
 ## 📝 License
 
