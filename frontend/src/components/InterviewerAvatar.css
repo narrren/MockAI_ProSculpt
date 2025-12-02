@@ -1,57 +1,654 @@
 .avatar {
   position: relative;
   width: 100%;
-  padding: var(--space-4);
-  background: linear-gradient(135deg, var(--brand-50), var(--accent-50));
+  padding: 0;
+  margin: 0;
+  background: transparent;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--gray-200);
+  border: none;
   text-align: center;
+  overflow: visible;
 }
 
 html[data-theme="dark"] .avatar {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(20, 184, 166, 0.15));
+  background: transparent;
 }
 
-.avatar__icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto var(--space-3);
+.avatar__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.avatar__video-wrapper {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: 280px;
+  margin: 0;
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #1a1a2e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+}
+
+.avatar__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+  display: block;
+  border-radius: var(--radius-lg);
+  background: #1a1a2e;
+  z-index: 1;
+  position: relative;
+}
+
+.avatar__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(4px);
+}
+
+.avatar__loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--brand-500);
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
-  display: grid;
-  place-items: center;
-  font-size: 40px;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.3s ease;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-2);
 }
 
-.avatar__icon--speaking {
-  animation: pulse 2s ease-in-out infinite;
+.avatar__loading-text {
+  color: white;
+  font-size: var(--fs-xs);
+  text-align: center;
+  padding: 0 var(--space-2);
 }
 
-@keyframes pulse {
-  0%, 100% {
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.avatar__image--speaking {
+  animation: subtleSpeak 0.3s ease-in-out infinite alternate;
+}
+
+.avatar__image--blink {
+  filter: brightness(0.95) contrast(1.05);
+  animation: quickBlink 0.15s ease;
+}
+
+@keyframes subtleSpeak {
+  0% {
     transform: scale(1);
   }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes quickBlink {
+  0%, 100% {
+    filter: brightness(1);
+  }
   50% {
-    transform: scale(1.05);
+    filter: brightness(0.9);
+  }
+}
+
+.avatar__speaking-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.avatar__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
+  color: white;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.avatar__placeholder-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-2);
+}
+
+.avatar__placeholder-text {
+  font-size: var(--fs-sm);
+  opacity: 0.9;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.avatar__placeholder-hint {
+  font-size: var(--fs-xs);
+  opacity: 0.7;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.avatar__realistic {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.avatar__portrait {
+  width: 200px;
+  height: 240px;
+  margin: 0 auto;
+  position: relative;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.3));
+}
+
+.avatar__face-realistic {
+  width: 160px;
+  height: 200px;
+  position: relative;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #e8d5c4 0%, #d4c4b0 50%, #c4b5a0 100%);
+  border-radius: 50% 50% 45% 45%;
+  overflow: visible;
+}
+
+/* Realistic Hair */
+.avatar__hair-realistic {
+  position: absolute;
+  top: -25px;
+  left: 20px;
+  width: 120px;
+  height: 60px;
+  background: linear-gradient(180deg, #2d1810 0%, #1a0f08 100%);
+  border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+  box-shadow: 
+    inset 0 -10px 20px rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+/* Forehead */
+.avatar__forehead {
+  position: absolute;
+  top: 15px;
+  left: 30px;
+  width: 100px;
+  height: 35px;
+  background: linear-gradient(180deg, #f5e6d3 0%, #e8d5c4 100%);
+  border-radius: 50% 50% 0 0;
+}
+
+/* Eyebrows */
+.avatar__eyebrow {
+  position: absolute;
+  width: 28px;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 50px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.avatar__eyebrow--left {
+  top: 50px;
+  left: 50px;
+  transform: rotate(-5deg);
+}
+
+.avatar__eyebrow--right {
+  top: 50px;
+  right: 50px;
+  transform: rotate(5deg);
+}
+
+/* Realistic Eyes */
+.avatar__eye-realistic {
+  position: absolute;
+  width: 32px;
+  height: 20px;
+  top: 65px;
+}
+
+.avatar__eye-realistic--left {
+  left: 45px;
+}
+
+.avatar__eye-realistic--right {
+  right: 45px;
+}
+
+.avatar__eyelid {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: #d4c4b0;
+  border-radius: 50px;
+  top: 0;
+  z-index: 3;
+  transition: height 0.15s ease;
+}
+
+.avatar__eye-realistic--blink .avatar__eyelid {
+  height: 18px;
+}
+
+.avatar__eyeball {
+  position: absolute;
+  width: 30px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  top: 1px;
+  left: 1px;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.avatar__iris {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #1e293b;
+  border-radius: 50%;
+  top: 2px;
+  left: 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.avatar__pupil {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #0f172a;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+}
+
+.avatar__highlight {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #ffffff;
+  border-radius: 50%;
+  top: 2px;
+  left: 4px;
+  opacity: 0.9;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Realistic Nose */
+.avatar__nose {
+  position: absolute;
+  top: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 35px;
+}
+
+.avatar__nose-bridge {
+  position: absolute;
+  width: 4px;
+  height: 25px;
+  background: linear-gradient(180deg, #d4c4b0 0%, #c4b5a0 100%);
+  left: 8px;
+  top: 0;
+  border-radius: 2px;
+  box-shadow: 
+    inset -1px 0 2px rgba(0, 0, 0, 0.1),
+    inset 1px 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.avatar__nose-tip {
+  position: absolute;
+  width: 18px;
+  height: 12px;
+  background: #c4b5a0;
+  border-radius: 50%;
+  bottom: 0;
+  left: 1px;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.avatar__nostril {
+  position: absolute;
+  width: 3px;
+  height: 4px;
+  background: #8b7355;
+  border-radius: 50%;
+  bottom: 8px;
+}
+
+.avatar__nostril--left {
+  left: 4px;
+}
+
+.avatar__nostril--right {
+  right: 4px;
+}
+
+/* Cheeks */
+.avatar__cheek {
+  position: absolute;
+  width: 35px;
+  height: 25px;
+  background: radial-gradient(ellipse, rgba(255, 182, 193, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  top: 100px;
+}
+
+.avatar__cheek--left {
+  left: 15px;
+}
+
+.avatar__cheek--right {
+  right: 15px;
+}
+
+/* Realistic Mouth */
+.avatar__mouth-realistic {
+  position: absolute;
+  width: 40px;
+  top: 135px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: all 0.05s ease;
+}
+
+.avatar__upper-lip {
+  position: absolute;
+  width: 100%;
+  height: 8px;
+  background: #c4b5a0;
+  border-radius: 50% 50% 0 0;
+  top: 0;
+  box-shadow: 
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.avatar__lower-lip {
+  position: absolute;
+  width: 100%;
+  height: 10px;
+  background: #d4c4b0;
+  border-radius: 0 0 50% 50%;
+  top: 8px;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.avatar__mouth-interior {
+  position: absolute;
+  width: 80%;
+  height: 60%;
+  background: #1e293b;
+  border-radius: 0 0 50% 50%;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.8;
+}
+
+/* Jawline and Chin */
+.avatar__jawline {
+  position: absolute;
+  bottom: 40px;
+  left: 30px;
+  width: 100px;
+  height: 50px;
+  border: 2px solid #c4b5a0;
+  border-top: none;
+  border-radius: 0 0 50% 50%;
+  opacity: 0.1;
+}
+
+.avatar__chin {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25px;
+  height: 15px;
+  background: #d4c4b0;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Professional Suit */
+.avatar__suit {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 80px;
+}
+
+.avatar__shirt {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 60px;
+  background: #f8fafc;
+  border-radius: 2px 2px 0 0;
+}
+
+.avatar__collar {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  top: 0;
+}
+
+.avatar__collar--left {
+  left: 20px;
+  border-width: 0 15px 12px 0;
+  border-color: transparent #f8fafc transparent transparent;
+}
+
+.avatar__collar--right {
+  right: 20px;
+  border-width: 0 0 12px 15px;
+  border-color: transparent transparent transparent #f8fafc;
+}
+
+.avatar__tie {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 60px;
+  background: #0f172a;
+  border-radius: 2px;
+}
+
+.avatar__tie::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent #0f172a transparent;
+}
+
+.avatar__jacket {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 80px;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 2px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Realistic Shadows */
+.avatar__shadow {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+}
+
+.avatar__shadow--forehead {
+  top: 20px;
+  left: 50px;
+  width: 60px;
+  height: 20px;
+}
+
+.avatar__shadow--cheek-left {
+  top: 100px;
+  left: 20px;
+  width: 30px;
+  height: 20px;
+}
+
+.avatar__shadow--cheek-right {
+  top: 100px;
+  right: 20px;
+  width: 30px;
+  height: 20px;
+}
+
+.avatar__shadow--jaw {
+  bottom: 50px;
+  left: 40px;
+  width: 80px;
+  height: 25px;
+}
+
+/* Realistic Highlights */
+.avatar__highlight {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+}
+
+.avatar__highlight--forehead {
+  top: 25px;
+  left: 60px;
+  width: 40px;
+  height: 15px;
+}
+
+.avatar__highlight--nose {
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 8px;
+}
+
+.avatar__highlight--chin {
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 8px;
+}
+
+/* Remove old eye and mouth styles - using realistic versions above */
+
+.avatar--speaking .avatar__face {
+  animation: subtlePulse 4s ease-in-out infinite;
+}
+
+.avatar--speaking .avatar__mouth {
+  animation: mouthMove 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.01) rotate(0.3deg);
+  }
+  50% {
+    transform: scale(1) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.01) rotate(-0.3deg);
+  }
+}
+
+@keyframes mouthMove {
+  0% {
+    transform: scaleY(1) scaleX(1);
+  }
+  100% {
+    transform: scaleY(1.15) scaleX(1.1);
+  }
+}
+
+.avatar__tongue {
+  animation: tongueMove 0.2s ease-in-out infinite alternate;
+}
+
+@keyframes tongueMove {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(2px);
   }
 }
 
 .avatar__name {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xs);
   font-weight: 600;
-  color: var(--text);
-  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+  margin-top: 0;
 }
 
 .avatar__status {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  font-size: var(--fs-sm);
+  gap: var(--space-1);
+  font-size: var(--fs-xs);
   color: var(--text-muted);
+  margin: 0;
 }
 
 .avatar__status-dot {
@@ -59,19 +656,22 @@ html[data-theme="dark"] .avatar {
   height: 8px;
   border-radius: 50%;
   background: var(--accent-500);
-  animation: blink 1.5s ease-in-out infinite;
+  animation: statusBlink 1.5s ease-in-out infinite;
 }
 
 .avatar__status-dot--speaking {
   background: var(--brand-500);
+  animation: statusBlink 0.8s ease-in-out infinite;
 }
 
-@keyframes blink {
+@keyframes statusBlink {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.5;
+    transform: scale(0.9);
   }
 }
 
@@ -81,13 +681,34 @@ html[data-theme="dark"] .avatar {
   left: 12px;
   right: 12px;
   padding: var(--space-2) var(--space-3);
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.75);
   color: #fff;
   border-radius: var(--radius-md);
   font-size: var(--fs-xs);
   text-align: center;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
   max-height: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: subtitleFade 0.3s ease;
+}
+
+@keyframes subtitleFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .avatar__face {
+    width: 120px;
+    height: 120px;
+  }
 }

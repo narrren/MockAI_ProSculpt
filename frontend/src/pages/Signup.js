@@ -43,9 +43,9 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
 
       if (response.data.status === 'success') {
         setStep('verify');
-        // If OTP is included in response (email not configured), show it
+        // If OTP is included in response (fallback if email fails), show it
         if (response.data.otp) {
-          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(Email not configured - OTP shown here for testing. Check backend console for details.)`);
+          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(If you don't receive the email, check your spam folder or use this OTP.)`);
         } else {
           setMessage(response.data.message);
         }

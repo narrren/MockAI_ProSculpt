@@ -9,9 +9,15 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 // Check backend health before login
 const checkBackendHealth = async () => {
   try {
-    const response = await axios.get(`${API_URL}/health`, { timeout: 3000 });
-    return response.data.status === 'healthy';
+    const response = await axios.get(`${API_URL}/health`, { 
+      timeout: 5000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data && response.data.status === 'healthy';
   } catch (error) {
+    console.error('Backend health check error:', error);
     return false;
   }
 };
@@ -81,7 +87,7 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
         setStep('otp');
         // If OTP is included in response (email not configured), show it
         if (response.data.otp) {
-          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(Email not configured - OTP shown here for testing. Check backend console for details.)`);
+          setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(If you don't receive the email, check your spam folder or use this OTP.)`);
         } else {
           setMessage(response.data.message);
         }

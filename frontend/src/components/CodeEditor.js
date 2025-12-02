@@ -4,7 +4,7 @@ import axios from 'axios';
 import { t } from '../i18n/languages';
 import './CodeEditor.css';
 
-const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true, question = null, suggestedLanguage = 'python', onCodeChange }) => {
+const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true, question = null, suggestedLanguage = 'python', onCodeChange, userId = null }) => {
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [evaluation, setEvaluation] = useState(null);
@@ -68,7 +68,8 @@ const CodeEditor = ({ apiUrl, onViolation, reportToBackend = true, question = nu
       const res = await axios.post(`${apiUrl}/evaluate_code`, {
         code: code,
         language: language,
-        question: question
+        question: question,
+        user_id: userId
       });
       setEvaluation(res.data);
     } catch (error) {

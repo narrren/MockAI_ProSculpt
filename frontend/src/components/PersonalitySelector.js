@@ -52,10 +52,7 @@ const PersonalitySelector = ({ apiUrl, onPersonalityChange }) => {
             onClick={() => handleChange(personality.id)}
           >
             <div style={{ fontSize: '20px', marginBottom: 'var(--space-1)' }}>
-              {personality.id === 'tough' && '🔥'}
-              {personality.id === 'friendly' && '😊'}
               {personality.id === 'rapid-fire' && '⚡'}
-              {personality.id === 'architect' && '🏗️'}
               {personality.id === 'professional' && '👔'}
             </div>
             <div className="personality__name">{personality.name}</div>

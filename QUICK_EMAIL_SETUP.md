@@ -1,84 +1,72 @@
-# Quick Email Setup Guide
+# Quick Email Setup for OTP
 
-## 🚀 Quick Setup (Gmail)
+## Current Status
+Your `.env` file has email configuration placeholders. You need to fill in your actual email credentials.
 
-### Step 1: Enable 2-Step Verification
-1. Go to [Google Account](https://myaccount.google.com/)
-2. Click **Security** (left sidebar)
-3. Under "Signing in to Google", click **2-Step Verification**
-4. Follow the steps to enable it
+## Step-by-Step Setup (Gmail)
 
-### Step 2: Generate App Password
-1. Still in **Security** settings
-2. Under "Signing in to Google", click **App passwords**
-   - If you don't see this, make sure 2-Step Verification is enabled first
-3. Select app: **Mail**
-4. Select device: **Other (Custom name)**
-5. Enter name: **Aptiva**
+### 1. Get Gmail App Password
+1. Go to: https://myaccount.google.com/apppasswords
+2. Sign in if needed
+3. Select **Mail** as the app
+4. Select **Other (Custom name)** as device
+5. Type: `Aptiva OTP`
 6. Click **Generate**
-7. **Copy the 16-character password** (it looks like: `abcd efgh ijkl mnop`)
-   - ⚠️ You can only see this once! Copy it now!
+7. Copy the 16-character password (looks like: `abcd efgh ijkl mnop`)
 
-### Step 3: Update .env File
-Open `backend/.env` and add/update these lines:
+**Note:** If you don't see "App passwords" option:
+- Enable 2-Step Verification first: https://myaccount.google.com/security
+- Then come back to App passwords
+
+### 2. Update .env File
+Open `backend/.env` and update these lines:
 
 ```env
-# Email Configuration
-ENABLE_EMAIL=true
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_FROM=your-email@gmail.com
+EMAIL_FROM=your-actual-email@gmail.com
 EMAIL_PASSWORD=abcdefghijklmnop
 ```
 
 **Important:**
-- Replace `your-email@gmail.com` with your actual Gmail address
-- Replace `abcdefghijklmnop` with the 16-character app password (remove spaces)
-- Make sure there are NO spaces in the app password
+- Replace `your-actual-email@gmail.com` with your Gmail address
+- Replace `abcdefghijklmnop` with the 16-character App Password (remove all spaces)
+- Keep `ENABLE_EMAIL=true`
+- Keep `SMTP_SERVER=smtp.gmail.com`
+- Keep `SMTP_PORT=587`
 
-### Step 4: Restart Backend
-After updating `.env`, restart your backend server:
-1. Stop the current backend (Ctrl+C)
-2. Start it again: `uvicorn main:app --reload`
+### 3. Restart Backend
+After saving `.env`, restart your backend server:
+- Stop the current backend (Ctrl+C)
+- Start it again
 
-### Step 5: Test
-1. Try signing up with your email
+### 4. Test
+1. Try signing up with a new email
 2. Check your inbox for the OTP email
-3. Check spam folder if not in inbox
+3. If email doesn't arrive, check backend console for errors
 
-## ✅ Example .env File
+## Alternative: Use Setup Script
 
-```env
-# Google Gemini API
-GOOGLE_API_KEY=your_gemini_api_key_here
-
-# Email Configuration
-ENABLE_EMAIL=true
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_FROM=yourname@gmail.com
-EMAIL_PASSWORD=abcdefghijklmnop
+Run the interactive setup script:
+```bash
+cd backend
+python setup_email.py
 ```
 
-## 🔍 Troubleshooting
+This will guide you through the setup process.
 
-### "Invalid credentials" error
-- Make sure you're using the **App Password**, not your regular Gmail password
-- Remove all spaces from the app password
-- Verify 2-Step Verification is enabled
+## Troubleshooting
 
-### "Connection refused" error
-- Check your internet connection
-- Verify firewall isn't blocking port 587
-- Try port 465 with SSL (change SMTP_PORT to 465)
-
-### Email still not received
-- Check spam/junk folder
-- Verify email address is correct
+**Email not sending?**
 - Check backend console for error messages
-- OTP is always printed to console as backup
+- Verify App Password is correct (no spaces, 16 characters)
+- Ensure 2-Step Verification is enabled
+- Check that `ENABLE_EMAIL=true` in `.env`
 
-## 📧 Other Email Providers
+**Still seeing OTP in UI?**
+- Email sending failed - check backend console
+- Verify all credentials are correct
+- Try the setup script for guided configuration
+
+## Other Email Providers
 
 ### Outlook/Hotmail
 ```env
@@ -95,4 +83,3 @@ SMTP_PORT=587
 EMAIL_FROM=your-email@yahoo.com
 EMAIL_PASSWORD=your-app-password
 ```
-

@@ -1,17 +1,33 @@
 """
 Resume Parser
-Extracts skills and experience from uploaded PDF resumes
+Extracts skills and experience from uploaded PDF resumes with AI-powered analysis
 """
 import os
 from typing import Dict, List, Optional
 from pypdf import PdfReader
 import re
+import json
 
 try:
     from pdfminer.high_level import extract_text
     PDFMINER_AVAILABLE = True
 except ImportError:
     PDFMINER_AVAILABLE = False
+
+try:
+    import google.generativeai as genai
+    from dotenv import load_dotenv
+    GEMINI_AVAILABLE = True
+    # Load API key
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path=env_path, override=True)
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        genai.configure(api_key=api_key)
+    else:
+        GEMINI_AVAILABLE = False
+except ImportError:
+    GEMINI_AVAILABLE = False
 
 
 class ResumeParser:
@@ -142,6 +158,95 @@ class ResumeParser:
         
         return education[:3]  # Limit to 3
     
+    def _analyze_with_ai(self, text: str) -> Dict:
+        """Use AI to comprehensively analyze the resume"""
+        if not GEMINI_AVAILABLE or not api_key:
+            return {}
+        
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            
+            prompt = f"""Analyze the following resume text and extract comprehensive information. Return a JSON object with the following structure:
+
+{{
+    "skills": ["skill1", "skill2", ...],
+    "experience": [
+        {{
+            "title": "Job Title",
+            "company": "Company Name",
+            "duration": "Start Date - End Date",
+            "responsibilities": ["responsibility1", "responsibility2", ...],
+            "achievements": ["achievement1", "achievement2", ...]
+        }}
+    ],
+    "education": [
+        {{
+            "degree": "Degree Name",
+            "institution": "University/College Name",
+            "year": "Graduation Year",
+            "gpa": "GPA if mentioned",
+            "field": "Field of Study"
+        }}
+    ],
+    "certifications": [
+        {{
+            "name": "Certification Name",
+            "issuer": "Issuing Organization",
+            "year": "Year obtained"
+        }}
+    ],
+    "projects": [
+        {{
+            "name": "Project Name",
+            "description": "Project description",
+            "technologies": ["tech1", "tech2", ...],
+            "duration": "Project duration if mentioned"
+        }}
+    ],
+    "contact_info": {{
+        "email": "email if found",
+        "phone": "phone if found",
+        "location": "location if found"
+    }},
+    "summary": "A brief professional summary (2-3 sentences)",
+    "analysis": {{
+        "years_of_experience": "estimated years",
+        "primary_skills": ["top 3-5 skills"],
+        "career_level": "Junior/Mid/Senior/Lead",
+        "strengths": ["strength1", "strength2", ...],
+        "recommendations": ["recommendation1", "recommendation2", ...]
+    }}
+}}
+
+Resume Text:
+{text[:8000]}
+
+Return ONLY valid JSON, no markdown formatting or code blocks."""
+
+            response = model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            # Remove markdown code blocks if present
+            if response_text.startswith("```"):
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+            if response_text.endswith("```"):
+                response_text = response_text.rsplit("```")[0].strip()
+            
+            analysis = json.loads(response_text)
+            print(f"[RESUME PARSER] AI analysis completed: {len(analysis.get('skills', []))} skills, {len(analysis.get('experience', []))} experiences")
+            return analysis
+            
+        except json.JSONDecodeError as e:
+            print(f"[RESUME PARSER] Failed to parse AI response as JSON: {e}")
+            print(f"[RESUME PARSER] Response: {response_text[:500]}")
+            return {}
+        except Exception as e:
+            print(f"[RESUME PARSER] AI analysis error: {e}")
+            return {}
+    
     def generate_interview_questions(self, skills: List[str], experience: List[Dict]) -> List[str]:
         """Generate interview questions based on resume"""
         questions = []
@@ -153,8 +258,11 @@ class ResumeParser:
         
         # Generate questions based on experience
         if experience:
-            latest = experience[0]
-            questions.append(f"At {latest.get('company', 'your previous company')}, what was your biggest challenge?")
+            latest = experience[0] if isinstance(experience[0], dict) else {}
+            company = latest.get('company', 'your previous company')
+            questions.append(f"At {company}, what was your biggest challenge?")
+            if latest.get('responsibilities'):
+                questions.append(f"Can you walk me through your responsibilities at {company}?")
         
         return questions[:15]  # Return top 15 questions
 

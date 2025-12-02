@@ -266,13 +266,38 @@
 }
 
 .chat--min {
-  width: 200px;
-  height: 50px;
+  width: auto;
+  min-width: fit-content;
+  height: auto;
+  min-height: 56px;
+}
+
+.chat--min .chat__panel {
+  width: 100%;
+  height: 100%;
+}
+
+.chat--min .chat__header {
+  padding: 14px 16px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat--min .chat__title {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.chat--min .chat__header-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .chat__title {
   font-weight: 600;
-  font-size: var(--fs-md);
+  font-size: var(--fs-xs);
   color: var(--text);
 }
 

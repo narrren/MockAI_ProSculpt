@@ -1,0 +1,122 @@
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.profile__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.profile__header-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.profile__section {
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+}
+
+.profile__section-header {
+  margin-bottom: var(--space-4);
+}
+
+.profile__section-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-4);
+}
+
+.profile__field {
+  margin-bottom: var(--space-4);
+}
+
+.profile__field:last-child {
+  margin-bottom: 0;
+}
+
+.profile__label {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.profile__value {
+  font-size: var(--fs-md);
+  color: var(--text);
+  padding: var(--space-2) 0;
+}
+
+.profile__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.profile__resume-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.profile__resume-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.profile__resume-date {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.profile__resume-skills {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.profile__resume-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.profile__resume-upload {
+  padding: var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-300);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile__resume-file-name {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.profile__resume-empty {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--text-muted);
+}
+
+.profile__loading {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--text-muted);
+}
+

@@ -6,7 +6,7 @@ import google.generativeai as genai
 import os
 import base64
 from dotenv import load_dotenv
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 load_dotenv()
 

@@ -24,7 +24,10 @@ const CareerBlueprint = ({ apiUrl, userId }) => {
   };
 
   useEffect(() => {
-    // Auto-fetch when component mounts (can be triggered manually too)
+    // Auto-fetch when component mounts if userId is available
+    if (userId) {
+      fetchBlueprint();
+    }
   }, [apiUrl, userId]);
 
   if (loading) {

@@ -16,6 +16,8 @@ import ProctoringDashboard from './components/ProctoringDashboard';
 import CommunicationMetrics from './components/CommunicationMetrics';
 import InterviewRounds from './components/InterviewRounds';
 import IntegrityScore from './components/IntegrityScore';
+import ResumeUpload from './components/ResumeUpload';
+import Profile from './components/Profile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import speechService from './services/speechService';
@@ -33,38 +35,23 @@ function App() {
   const [flashAlerts, setFlashAlerts] = useState([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true); // Toggle for alerts
   const [wsConnected, setWsConnected] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage or system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) return savedTheme;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-  
   // Keep ref in sync with state
   useEffect(() => {
     alertsEnabledRef.current = alertsEnabled;
   }, [alertsEnabled]);
 
-  // Theme management
+  // Force dark mode only
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
-    if (theme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-      body.setAttribute('data-theme', 'dark');
-    } else {
-      root.removeAttribute('data-theme');
-      body.removeAttribute('data-theme');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+    root.setAttribute('data-theme', 'dark');
+    body.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
   
   const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
   const [currentSpeechText, setCurrentSpeechText] = useState('');
+  const [avatarReady, setAvatarReady] = useState(null); // null = checking, true = ready, false = failed
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [windowBlurCount, setWindowBlurCount] = useState(0);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
@@ -78,6 +65,9 @@ function App() {
   const [currentRound, setCurrentRound] = useState(1);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
+  const [hasResume, setHasResume] = useState(null); // null = checking, true/false = known
+  const [showResumeUpload, setShowResumeUpload] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const wsRef = useRef(null);
   const webcamRef = useRef(null);
   const frameIntervalRef = useRef(null);
@@ -91,8 +81,13 @@ function App() {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const response = await axios.get(`${API_URL}/health`, { timeout: 3000 });
-        if (response.data.status === 'healthy') {
+        const response = await axios.get(`${API_URL}/health`, { 
+          timeout: 5000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.data && response.data.status === 'healthy') {
           setBackendStatus('connected');
         } else {
           setBackendStatus('error');
@@ -103,6 +98,7 @@ function App() {
       }
     };
     
+    // Check immediately and then periodically
     checkBackend();
     const interval = setInterval(checkBackend, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
@@ -145,10 +141,16 @@ function App() {
             if (webcamRef.current && ws.readyState === WebSocket.OPEN) {
               try {
                 const imageSrc = webcamRef.current.getScreenshot();
-                if (imageSrc && imageSrc.length > 100) { // Ensure we have actual image data
+                // Check if we have valid base64 image data (should start with "data:image/")
+                if (imageSrc && imageSrc.startsWith('data:image/') && imageSrc.length > 1000) {
                   ws.send(imageSrc);
+                } else if (imageSrc === null) {
+                  // Camera not ready yet, silently skip
                 } else {
-                  console.warn('Screenshot is empty or too small');
+                  // Only log warning occasionally to avoid spam
+                  if (Math.random() < 0.05) { // Log ~5% of failures
+                    console.warn('Screenshot not ready or invalid format');
+                  }
                 }
               } catch (error) {
                 console.error('Error capturing frame:', error);
@@ -346,18 +348,63 @@ function App() {
   };
 
   // Handle authentication
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = async (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
     // Reset CAPTCHA verification when new user logs in
     setCaptchaVerified(false);
+    
+    // Check if user has uploaded resume (skip for test accounts - they go directly to interview)
+    if (userData.is_test) {
+      setHasResume(null); // Don't check for test accounts - they can add resume later in profile
+      setShowResumeUpload(false); // Never show upload page for test accounts
+    } else {
+      try {
+        const userId = encodeURIComponent(userData.email || userData.id);
+        const response = await axios.get(`${API_URL}/user/${userId}/resume-status`);
+        const hasResumeStatus = response.data.has_resume || false;
+        setHasResume(hasResumeStatus);
+        setShowResumeUpload(!hasResumeStatus); // Show upload if no resume
+      } catch (error) {
+        console.error('Error checking resume status:', error);
+        // Default to showing upload if check fails
+        setHasResume(false);
+        setShowResumeUpload(true);
+      }
+    }
   };
 
-  const handleSignupSuccess = (userData) => {
+  const handleSignupSuccess = async (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
     // Reset CAPTCHA verification when new user signs up
     setCaptchaVerified(false);
+    
+    // Check if user already has resume (might have registered before)
+    if (userData.is_test) {
+      setHasResume(null); // Don't check for test accounts
+      setShowResumeUpload(false); // Never show upload page for test accounts
+    } else {
+      // Check resume status from userData or make API call
+      const hasResumeStatus = userData.has_resume || false;
+      if (!hasResumeStatus) {
+        // Double-check with API
+        try {
+          const userId = encodeURIComponent(userData.email || userData.id);
+          const response = await axios.get(`${API_URL}/user/${userId}/resume-status`);
+          const apiHasResume = response.data.has_resume || false;
+          setHasResume(apiHasResume);
+          setShowResumeUpload(!apiHasResume);
+        } catch (error) {
+          console.error('Error checking resume status:', error);
+          setHasResume(false);
+          setShowResumeUpload(true);
+        }
+      } else {
+        setHasResume(true);
+        setShowResumeUpload(false);
+      }
+    }
   };
 
   // Handle CAPTCHA verification
@@ -416,19 +463,50 @@ function App() {
     return <Captcha onVerify={handleCaptchaVerify} />;
   }
 
+  // Show resume upload if user doesn't have resume (test accounts skip this - they can add resume in profile)
+  if (isAuthenticated && showResumeUpload && hasResume === false && !user?.is_test) {
+    return (
+      <div className="app">
+        <div className="topbar">
+          <div className="topbar__inner">
+            <div className="logo">
+              <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo__img" />
+              <div className="logo__text">
+                <span className="logo__name">{t('app.title')}</span>
+                <span className="logo__tagline">{t('app.tagline')}</span>
+              </div>
+            </div>
+            {user && (
+              <div className="user-info">
+                <button 
+                  onClick={() => setShowProfile(!showProfile)} 
+                  className="btn btn--ghost btn--sm"
+                  title="View Profile"
+                >
+                  👤 Profile
+                </button>
+                <span>{user.name || user.email}</span>
+                <button onClick={handleLogout} className="btn btn--ghost btn--sm">{t('app.logout')}</button>
+              </div>
+            )}
+          </div>
+        </div>
+        <ResumeUpload
+          apiUrl={API_URL}
+          userId={user?.email || user?.id || 'user'}
+          onUploadSuccess={(data) => {
+            setHasResume(true);
+            setShowResumeUpload(false);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
       
-      {/* Theme Toggle Button - Fixed Position */}
-      <button 
-        className="theme-toggle"
-        onClick={toggleTheme}
-        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-        aria-label="Toggle theme"
-      >
-        {theme === 'light' ? '🌙' : '☀️'}
-      </button>
 
       {/* Top Header */}
       <div className="topbar">
@@ -465,6 +543,13 @@ function App() {
             </div>
             {user && (
               <div className="user-info">
+                <button 
+                  onClick={() => setShowProfile(!showProfile)} 
+                  className="btn btn--ghost btn--sm"
+                  title="View Profile"
+                >
+                  👤 Profile
+                </button>
                 <span>{user.name || user.email}</span>
                 <button onClick={handleLogout} className="btn btn--ghost btn--sm">{t('app.logout')}</button>
               </div>
@@ -530,14 +615,35 @@ function App() {
           )}
         </div>
 
-        {/* RIGHT PANEL: Code Editor or Career Blueprint */}
-        {currentCodingQuestion ? (
+        {/* RIGHT PANEL: Profile, Code Editor or Career Blueprint */}
+        {showProfile ? (
+          <div className="right-panel">
+            <Profile
+              apiUrl={API_URL}
+              userId={user?.email || user?.id || 'user'}
+              onResumeChange={() => {
+                // Refresh resume status when resume is changed
+                if (user && !user.is_test) {
+                  const userId = encodeURIComponent(user.email || user.id);
+                  axios.get(`${API_URL}/user/${userId}/resume-status`)
+                    .then(response => {
+                      setHasResume(response.data.has_resume || false);
+                    })
+                    .catch(error => {
+                      console.error('Error checking resume status:', error);
+                    });
+                }
+              }}
+            />
+          </div>
+        ) : currentCodingQuestion ? (
           <div className="right-panel">
             <CodeEditor 
               apiUrl={API_URL} 
               onViolation={handleCodeViolation}
               question={currentCodingQuestion}
               suggestedLanguage={suggestedLanguage}
+              userId={user?.email || user?.id || 'user'}
               onCodeChange={(code) => {
                 // Store code for revision
                 if (sessionId) {
@@ -642,6 +748,8 @@ function App() {
                   isSpeaking={isInterviewerSpeaking}
                   interviewerName="AI Interviewer"
                   currentSpeech={currentSpeechText}
+                  apiUrl={API_URL}
+                  onAvatarReady={setAvatarReady}
                 />
               </div>
               {/* Chat Interface Below Avatar */}
@@ -656,6 +764,7 @@ function App() {
                 }}
                 isMuted={isInterviewerMuted}
                 userId={user?.email || null}
+                avatarReady={avatarReady}
               />
             </>
           )}

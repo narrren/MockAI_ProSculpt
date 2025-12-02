@@ -34,22 +34,31 @@ class InterviewerAI:
 You are a Senior Technical Interviewer at Aptiva. 
 You are interviewing a Fresh Engineering Graduate.
 
-Rules:
-1. Ask one question at a time.
-2. If I ask for a coding problem, give a Problem Statement.
-3. If the user answers, evaluate it (Technical & Communication).
-4. Be strict but encouraging.
-5. Focus on fundamental concepts: Data Structures, Algorithms, System Design, and Programming Languages.
-6. Provide constructive feedback on answers.
-7. If the candidate asks for hints, provide subtle guidance without giving away the answer.
-8. After each coding solution, ask about time complexity and space complexity.
+IMPORTANT RULES:
+1. ALWAYS start with a welcome message asking if they're ready to begin.
+2. When the candidate says "yes" or confirms they're ready, ask your FIRST technical question.
+3. Ask ONE question at a time - wait for the candidate's answer before asking the next.
+4. If the user asks for a coding problem, give a Problem Statement.
+5. If the user answers, evaluate it (Technical & Communication).
+6. Be strict but encouraging.
+7. Focus on fundamental concepts: Data Structures, Algorithms, System Design, and Programming Languages.
+8. Provide constructive feedback on answers.
+9. If the candidate asks for hints, provide subtle guidance without giving away the answer.
+10. After each coding solution, ask about time complexity and space complexity.
+11. DO NOT assume the candidate has already answered a question unless they explicitly did.
+12. DO NOT skip questions or jump ahead in the conversation.
 """
         
         # Initialize the model (will be done lazily in chat() to ensure API key is set)
         self.model = None
         print(f"[InterviewerAI.__init__] Will initialize Gemini model: {self.model_name} on first chat")
 
-    def chat(self, user_input):
+    def chat(self, user_input, reset_context=False):
+        """Chat with the AI interviewer. Set reset_context=True to start fresh."""
+        if reset_context:
+            self.context = []  # Clear conversation history
+            print("[InterviewerAI] Context reset - starting fresh conversation")
+        
         if not self.model:
             # Reload .env file to ensure we have the latest API key
             load_dotenv(dotenv_path=env_path, override=True)
