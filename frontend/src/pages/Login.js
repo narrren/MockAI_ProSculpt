@@ -77,12 +77,23 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
 
       if (response.data.status === 'success') {
         // Test credentials - direct login
-        localStorage.setItem('auth_token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        if (onLoginSuccess) {
-          onLoginSuccess(response.data.user);
+        const token = response.data.token;
+        const userData = response.data.user || {};
+        
+        // Include token in userData so handlers can access it
+        if (token) {
+          userData.token = token;
+          localStorage.setItem('auth_token', token);
+          console.log('[Login] Token stored (test account):', token.substring(0, 20) + '...');
+        } else {
+          console.error('[Login] No token in test login response!', response.data);
         }
-      } else if (response.data.status === 'otp_required') {
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        if (onLoginSuccess) {
+          onLoginSuccess(userData);
+        }
+      } else if (response.data.status === 'otp_required' || response.data.status === 'otp_sent') {
         // Regular user - OTP required
         setStep('otp');
         // If OTP is included in response (email not configured), show it
@@ -145,10 +156,23 @@ const Login = ({ onLoginSuccess, onSwitchToSignup }) => {
 
       if (response && response.data && response.data.status === 'success') {
         console.log('OTP verification successful');
-        localStorage.setItem('auth_token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Store token and user
+        const token = response.data.token;
+        const userData = response.data.user || {};
+        
+        // Include token in userData so handlers can access it
+        if (token) {
+          userData.token = token;
+          localStorage.setItem('auth_token', token);
+          console.log('[Login] Token stored:', token.substring(0, 20) + '...');
+        } else {
+          console.error('[Login] No token in response!', response.data);
+        }
+        
+        localStorage.setItem('user', JSON.stringify(userData));
         if (onLoginSuccess) {
-          onLoginSuccess(response.data.user);
+          onLoginSuccess(userData);
         }
       } else {
         setError(response?.data?.message || 'OTP verification failed');

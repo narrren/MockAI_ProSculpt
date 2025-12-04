@@ -3,10 +3,11 @@ import smtplib
 import os
 import sys
 import io
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 import hashlib
 from dotenv import load_dotenv
 
@@ -50,6 +51,7 @@ load_dotenv(dotenv_path=env_path, override=True)  # override=True ensures latest
 # In-memory storage (use database in production)
 users_db = {}
 otp_storage = {}
+token_storage = {}  # Map token -> email for authentication
 
 # Test credentials that bypass OTP
 TEST_EMAIL = "test@aptiva.ai"
@@ -82,11 +84,87 @@ def generate_otp() -> str:
     return str(secrets.randbelow(900000) + 100000)
 
 
-def send_otp_email(email: str, otp: str) -> bool:
+def validate_email_config() -> Dict[str, Any]:
+    """
+    Validate email configuration and test connection.
+    Returns dict with 'valid' (bool) and 'message' (str).
+    """
+    try:
+        # Reload environment variables
+        load_dotenv(dotenv_path=env_path, override=True)
+        
+        current_enable_email = os.getenv("ENABLE_EMAIL", "true").lower() == "true"
+        current_email_from = os.getenv("EMAIL_FROM", "your-email@gmail.com")
+        current_email_password = os.getenv("EMAIL_PASSWORD", "")
+        current_smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        current_smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        
+        # Check if email is configured
+        if not current_enable_email:
+            return {
+                "valid": False,
+                "message": "Email is disabled (ENABLE_EMAIL=false)"
+            }
+        
+        if not current_email_password:
+            return {
+                "valid": False,
+                "message": "EMAIL_PASSWORD is not set"
+            }
+        
+        if not current_email_from or current_email_from == "your-email@gmail.com" or "@" not in current_email_from:
+            return {
+                "valid": False,
+                "message": f"EMAIL_FROM is not configured properly: {current_email_from}"
+            }
+        
+        # Test SMTP connection
+        try:
+            safe_print(f"[EMAIL VALIDATION] Testing connection to {current_smtp_server}:{current_smtp_port}...")
+            server = smtplib.SMTP(current_smtp_server, current_smtp_port, timeout=10)
+            server.starttls()
+            safe_print(f"[EMAIL VALIDATION] Testing authentication...")
+            server.login(current_email_from, current_email_password)
+            server.quit()
+            
+            safe_print(f"[EMAIL VALIDATION] [SUCCESS] Email configuration is valid!")
+            return {
+                "valid": True,
+                "message": "Email configuration is valid and connection test successful"
+            }
+            
+        except smtplib.SMTPAuthenticationError as auth_error:
+            return {
+                "valid": False,
+                "message": f"Authentication failed: {auth_error}. Check EMAIL_PASSWORD (use App Password for Gmail)"
+            }
+        except Exception as conn_error:
+            return {
+                "valid": False,
+                "message": f"Connection test failed: {conn_error}"
+            }
+            
+    except Exception as e:
+        return {
+            "valid": False,
+            "message": f"Validation error: {e}"
+        }
+
+
+def send_otp_email(email: str, otp: str) -> Dict[str, Any]:
     """
     Send OTP email to user.
-    Returns True if sent successfully, False otherwise.
+    Returns dict with 'success' (bool) and 'message' (str).
+    Always prints OTP to console for debugging.
     """
+    # ALWAYS print OTP to console - this is the primary way to get OTP during development
+    safe_print("=" * 60)
+    safe_print(f"[OTP EMAIL] ===== OTP VERIFICATION CODE =====")
+    safe_print(f"[OTP EMAIL] Email: {email}")
+    safe_print(f"[OTP EMAIL] OTP Code: {otp}")
+    safe_print(f"[OTP EMAIL] =====================================")
+    safe_print("=" * 60)
+    
     try:
         # Reload environment variables to ensure latest values
         load_dotenv(dotenv_path=env_path, override=True)
@@ -95,82 +173,189 @@ def send_otp_email(email: str, otp: str) -> bool:
         current_enable_email = os.getenv("ENABLE_EMAIL", "true").lower() == "true"
         current_email_from = os.getenv("EMAIL_FROM", "your-email@gmail.com")
         current_email_password = os.getenv("EMAIL_PASSWORD", "")
+        current_smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        current_smtp_port = int(os.getenv("SMTP_PORT", "587"))
         
-        # Always print OTP to console for debugging
-        safe_print(f"[OTP EMAIL] To: {email}, OTP: {otp}")
-        safe_print(f"[OTP EMAIL] Config check - ENABLE_EMAIL: {current_enable_email}, EMAIL_PASSWORD set: {bool(current_email_password)}, EMAIL_FROM: {current_email_from}")
+        safe_print(f"[OTP EMAIL] Config - ENABLE_EMAIL: {current_enable_email}")
+        safe_print(f"[OTP EMAIL] Config - EMAIL_FROM: {current_email_from}")
+        safe_print(f"[OTP EMAIL] Config - EMAIL_PASSWORD set: {bool(current_email_password)}")
+        safe_print(f"[OTP EMAIL] Config - SMTP_SERVER: {current_smtp_server}:{current_smtp_port}")
         
-        # If email is disabled or credentials not configured, just print
-        if not current_enable_email or not current_email_password:
-            safe_print(f"[OTP EMAIL] Email sending disabled or not configured. OTP: {otp}")
-            safe_print(f"[OTP EMAIL] To enable email, set ENABLE_EMAIL=true and configure EMAIL_FROM and EMAIL_PASSWORD in .env")
-            return True  # Return True so flow continues (OTP is printed to console)
+        # Check if email is properly configured
+        email_configured = (
+            current_enable_email and 
+            current_email_password and 
+            current_email_from and 
+            current_email_from != "your-email@gmail.com" and 
+            "@" in current_email_from
+        )
         
-        # Check if EMAIL_FROM is still a placeholder
-        if current_email_from == "your-email@gmail.com" or "@" not in current_email_from:
-            safe_print(f"[OTP EMAIL] EMAIL_FROM is not configured properly. OTP: {otp}")
-            safe_print(f"[OTP EMAIL] Current EMAIL_FROM: {current_email_from}")
-            return True  # Return True so flow continues (OTP is printed to console)
+        if not email_configured:
+            safe_print(f"[OTP EMAIL] Email not configured - OTP is shown above in console")
+            safe_print(f"[OTP EMAIL] To enable email sending, configure in backend/.env:")
+            safe_print(f"[OTP EMAIL]   ENABLE_EMAIL=true")
+            safe_print(f"[OTP EMAIL]   EMAIL_FROM=your-email@gmail.com")
+            safe_print(f"[OTP EMAIL]   EMAIL_PASSWORD=your-app-password")
+            safe_print(f"[OTP EMAIL]   SMTP_SERVER=smtp.gmail.com (or your provider)")
+            safe_print(f"[OTP EMAIL]   SMTP_PORT=587")
+            return {
+                "success": True,  # Return True so flow continues
+                "message": f"OTP sent to console (email not configured). OTP: {otp}",
+                "otp": otp  # Include OTP in response
+            }
         
-        # Send actual email
-        msg = MIMEMultipart()
-        msg['From'] = current_email_from
-        msg['To'] = email
-        msg['Subject'] = "Aptiva - OTP Verification"
+        # Try to send actual email with retry logic
+        max_retries = 3
+        retry_delay = 2  # seconds
         
-        body = f"""<html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
-                .otp-box {{ background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }}
-                .otp-code {{ font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>Aptiva</h1>
-                    <p>OTP Verification</p>
-                </div>
-                <div class="content">
-                    <h2>Your One-Time Password (OTP)</h2>
-                    <p>Please use the following OTP to verify your account:</p>
-                    <div class="otp-box">
-                        <div class="otp-code">{otp}</div>
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Create email message
+                msg = MIMEMultipart()
+                msg['From'] = current_email_from
+                msg['To'] = email
+                msg['Subject'] = "Aptiva - OTP Verification Code"
+                
+                body = f"""<html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+                        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+                        .otp-box {{ background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }}
+                        .otp-code {{ font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }}
+                        .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>Aptiva</h1>
+                            <p>OTP Verification</p>
+                        </div>
+                        <div class="content">
+                            <h2>Your One-Time Password (OTP)</h2>
+                            <p>Please use the following OTP to verify your account:</p>
+                            <div class="otp-box">
+                                <div class="otp-code">{otp}</div>
+                            </div>
+                            <p><strong>This OTP will expire in 10 minutes.</strong></p>
+                            <p>If you didn't request this OTP, please ignore this email.</p>
+                            <div class="footer">
+                                <p>This is an automated email from Aptiva.</p>
+                                <p>Do not reply to this email.</p>
+                            </div>
+                        </div>
                     </div>
-                    <p><strong>This OTP will expire in 10 minutes.</strong></p>
-                    <p>If you didn't request this OTP, please ignore this email.</p>
-                    <div class="footer">
-                        <p>This is an automated email from Aptiva.</p>
-                        <p>Do not reply to this email.</p>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>"""
-        
-        msg.attach(MIMEText(body, 'html'))
-        
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        safe_print(f"[OTP EMAIL] Attempting to login with EMAIL_FROM: {current_email_from}")
-        server.login(current_email_from, current_email_password)
-        safe_print(f"[OTP EMAIL] Login successful, sending email...")
-        server.send_message(msg)
-        server.quit()
-        
-        safe_print(f"[OTP EMAIL] [OK] Email sent successfully to {email}")
-        return True
+                </body>
+                </html>"""
+                
+                msg.attach(MIMEText(body, 'html'))
+                
+                # Attempt to send email with retry
+                safe_print(f"[OTP EMAIL] Attempt {attempt}/{max_retries}: Connecting to {current_smtp_server}:{current_smtp_port}...")
+                
+                server = None
+                try:
+                    # Create SMTP connection with longer timeout
+                    server = smtplib.SMTP(current_smtp_server, current_smtp_port, timeout=30)
+                    server.set_debuglevel(0)
+                    
+                    safe_print(f"[OTP EMAIL] Starting TLS...")
+                    server.starttls()
+                    
+                    safe_print(f"[OTP EMAIL] Authenticating with {current_email_from}...")
+                    server.login(current_email_from, current_email_password)
+                    
+                    safe_print(f"[OTP EMAIL] Sending email to {email}...")
+                    server.send_message(msg)
+                    
+                    safe_print(f"[OTP EMAIL] [SUCCESS] Email sent successfully to {email} on attempt {attempt}")
+                    
+                    # Success! Return immediately
+                    return {
+                        "success": True,
+                        "message": "OTP sent to your email. Please check your inbox.",
+                        "otp": otp  # Still include OTP as backup
+                    }
+                    
+                except smtplib.SMTPAuthenticationError as auth_error:
+                    # Authentication errors won't be fixed by retrying
+                    safe_print(f"[OTP EMAIL] [ERROR] Authentication failed: {auth_error}")
+                    safe_print(f"[OTP EMAIL] [ERROR] Check your EMAIL_PASSWORD (use App Password for Gmail)")
+                    safe_print(f"[OTP EMAIL] [ERROR] Verify EMAIL_FROM matches the account")
+                    # Don't retry authentication errors
+                    raise
+                    
+                except (smtplib.SMTPException, ConnectionError, TimeoutError, OSError) as smtp_error:
+                    # Network/connection errors - retry these
+                    error_msg = str(smtp_error)
+                    safe_print(f"[OTP EMAIL] [ERROR] Attempt {attempt} failed: {error_msg}")
+                    
+                    if attempt < max_retries:
+                        wait_time = retry_delay * attempt  # Exponential backoff
+                        safe_print(f"[OTP EMAIL] Retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        continue  # Try again
+                    else:
+                        # All retries exhausted
+                        safe_print(f"[OTP EMAIL] [ERROR] All {max_retries} attempts failed")
+                        raise
+                        
+                except Exception as email_error:
+                    # Unexpected errors
+                    error_msg = str(email_error)
+                    safe_print(f"[OTP EMAIL] [ERROR] Unexpected error on attempt {attempt}: {error_msg}")
+                    
+                    if attempt < max_retries:
+                        wait_time = retry_delay * attempt
+                        safe_print(f"[OTP EMAIL] Retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        safe_print(f"[OTP EMAIL] [ERROR] All {max_retries} attempts failed")
+                        raise
+                        
+                finally:
+                    # Always close the connection
+                    if server:
+                        try:
+                            server.quit()
+                        except:
+                            pass
+                            
+            except smtplib.SMTPAuthenticationError as auth_error:
+                # Authentication failed - don't retry, but still return success with OTP
+                safe_print(f"[OTP EMAIL] [FATAL] Authentication failed - cannot send email")
+                safe_print(f"[OTP EMAIL] [FATAL] Please check your email credentials in .env")
+                safe_print(f"[OTP EMAIL] [FATAL] OTP is shown above in console: {otp}")
+                return {
+                    "success": True,  # Return True so flow continues
+                    "message": f"Email authentication failed. Please check email configuration. OTP: {otp} (check console)",
+                    "otp": otp
+                }
+                
+            except Exception as final_error:
+                # All retries exhausted or other fatal error
+                if attempt >= max_retries:
+                    safe_print(f"[OTP EMAIL] [FATAL] Failed to send email after {max_retries} attempts")
+                    safe_print(f"[OTP EMAIL] [FATAL] Last error: {final_error}")
+                    safe_print(f"[OTP EMAIL] [FATAL] OTP is shown above in console: {otp}")
+                    return {
+                        "success": True,  # Return True so flow continues
+                        "message": f"Email sending failed after {max_retries} attempts. OTP: {otp} (check console)",
+                        "otp": otp
+                    }
         
     except Exception as e:
-        safe_print(f"[OTP EMAIL] Error sending email: {e}")
-        safe_print(f"[OTP EMAIL] OTP for {email} is: {otp} (check console if email failed)")
-        # Still return True so user can proceed (OTP is in console)
-        return True
+        safe_print(f"[OTP EMAIL] [CRITICAL ERROR] {e}")
+        safe_print(f"[OTP EMAIL] OTP is shown above in console: {otp}")
+        return {
+            "success": True,  # Return True so flow continues
+            "message": f"Error. OTP: {otp} (check console)",
+            "otp": otp
+        }
 
 
 def register_user(email: str, name: str) -> Dict:
@@ -199,19 +384,25 @@ def register_user(email: str, name: str) -> Dict:
         "attempts": 0
     }
     
-    # Send OTP email
-    email_sent = send_otp_email(email, otp)
+    # Send OTP email (always returns success with OTP in console/response)
+    email_result = send_otp_email(email, otp)
     
-    if email_sent:
-        return {
-            "status": "success",
-            "message": "OTP sent to your email. Please check your inbox."
-        }
-    else:
-        return {
-            "status": "error",
-            "message": "Failed to send OTP email. Please try again."
-        }
+    # Always return success - OTP is always available in console
+    # Use "otp_sent" status for consistency with frontend expectations
+    result = {
+        "status": "otp_sent",  # Changed from "success" to "otp_sent" for frontend compatibility
+        "message": email_result.get("message", "OTP sent. Please check your email or console.")
+    }
+    
+    # ALWAYS include OTP in response (for backup if email fails or is delayed)
+    # This ensures user can always proceed even if email doesn't arrive
+    result["otp"] = otp
+    
+    # Update message if email not configured
+    if "not configured" in email_result.get("message", "").lower():
+        result["message"] = f"OTP: {otp} (Email not configured - check backend console for OTP)"
+    
+    return result
 
 
 def verify_otp(email: str, otp: str) -> Dict:
@@ -300,6 +491,7 @@ def verify_otp(email: str, otp: str) -> Dict:
     
     # Generate session token
     token = secrets.token_urlsafe(32)
+    token_storage[token] = email  # Store token -> email mapping
     
     # Clean up OTP
     del otp_storage[email]
@@ -377,6 +569,7 @@ def login_user(email: str, password: str) -> Dict:
             safe_print(f"[LOGIN] Warning: Could not save test user to database: {e}")
         
         token = secrets.token_urlsafe(32)
+        token_storage[token] = email  # Store token -> email mapping
         # Sanitize user_data to remove any non-ASCII characters
         sanitized_user_data = {}
         for key, value in user_data.items():
@@ -392,14 +585,45 @@ def login_user(email: str, password: str) -> Dict:
             "user": sanitized_user_data
         }
     
-    # Regular user login - check if user exists
+    # Regular user login - check if user exists in database first
     # Only check this if NOT using test credentials
-    if email not in users_db:
-        safe_print(f"[LOGIN] [ERROR] User not found in database: {email}")
-        return {
-            "status": "error",
-            "message": "User not found. Please sign up first."
-        }
+    db_user = None
+    try:
+        from database import get_db, User, ResumeData
+        db = next(get_db())
+        try:
+            db_user = db.query(User).filter(User.email == email).first()
+            if db_user:
+                # User exists in database, load into memory
+                resume_data = db.query(ResumeData).filter(ResumeData.user_id == db_user.id).first()
+                has_resume = resume_data is not None
+                
+                users_db[email] = {
+                    "email": db_user.email,
+                    "name": db_user.name,
+                    "created_at": db_user.created_at.isoformat() if db_user.created_at else None,
+                    "last_login": db_user.last_login.isoformat() if db_user.last_login else None,
+                    "has_resume": has_resume
+                }
+            else:
+                # User not in database
+                if email not in users_db:
+                    safe_print(f"[LOGIN] [ERROR] User not found in database: {email}")
+                    return {
+                        "status": "error",
+                        "message": "User not found. Please sign up first."
+                    }
+        finally:
+            db.close()
+    except Exception as e:
+        safe_print(f"[LOGIN] Warning: Could not check database: {e}")
+        # Fallback to in-memory check
+        if email not in users_db:
+            safe_print(f"[LOGIN] [ERROR] User not found: {email}")
+            return {
+                "status": "error",
+                "message": "User not found. Please sign up first."
+            }
     
     # For regular users, they need to verify OTP each time
     # Generate new OTP for login
@@ -414,19 +638,24 @@ def login_user(email: str, password: str) -> Dict:
         "is_login": True
     }
     
-    # Send OTP email
-    email_sent = send_otp_email(email, otp)
+    # Send OTP email (always returns success with OTP in console/response)
+    email_result = send_otp_email(email, otp)
     
-    if email_sent:
-        return {
-            "status": "otp_required",
-            "message": "OTP sent to your email. Please verify to login."
-        }
-    else:
-        return {
-            "status": "error",
-            "message": "Failed to send OTP email. Please try again."
-        }
+    # Always return success - OTP is always available in console
+    result = {
+        "status": "otp_required",  # Keep "otp_required" for login flow
+        "message": email_result.get("message", "OTP sent. Please check your email or console.")
+    }
+    
+    # ALWAYS include OTP in response (for backup if email fails or is delayed)
+    # This ensures user can always proceed even if email doesn't arrive
+    result["otp"] = otp
+    
+    # Update message if email not configured
+    if "not configured" in email_result.get("message", "").lower():
+        result["message"] = f"OTP: {otp} (Email not configured - check backend console for OTP)"
+    
+    return result
 
 
 def verify_login_otp(email: str, otp: str) -> Dict:
@@ -492,6 +721,7 @@ def verify_login_otp(email: str, otp: str) -> Dict:
         safe_print(f"[LOGIN] Warning: Could not update last_login in database: {e}")
     
     token = secrets.token_urlsafe(32)
+    token_storage[token] = email  # Store token -> email mapping
     del otp_storage[email]
     
     # Get user data with updated resume status
@@ -532,10 +762,55 @@ def verify_token(token: str) -> Optional[Dict]:
     Verify session token and return user data.
     In production, use JWT tokens with expiry.
     """
-    # Simple token verification (use JWT in production)
-    for email, user_data in users_db.items():
-        # In production, store tokens separately and verify properly
-        if token:
-            return user_data
+    if not token:
+        return None
+    
+    # Get email from token storage
+    email = token_storage.get(token)
+    if not email:
+        return None
+    
+    # Get user data from in-memory storage
+    if email in users_db:
+        return users_db[email]
+    
+    # If not in memory, try to load from database
+    try:
+        from database import get_db, User, ResumeData
+        db = next(get_db())
+        try:
+            db_user = db.query(User).filter(User.email == email).first()
+            if db_user:
+                # Check for resume
+                resume_data = db.query(ResumeData).filter(ResumeData.user_id == db_user.id).first()
+                has_resume = resume_data is not None
+                
+                # Create user data dict
+                user_data = {
+                    "email": db_user.email,
+                    "name": db_user.name,
+                    "created_at": db_user.created_at.isoformat() if db_user.created_at else None,
+                    "last_login": db_user.last_login.isoformat() if db_user.last_login else None,
+                    "has_resume": has_resume
+                }
+                
+                # Store in memory for future use
+                users_db[email] = user_data
+                return user_data
+        finally:
+            db.close()
+    except Exception as e:
+        safe_print(f"[VERIFY_TOKEN] Error loading user from database: {e}")
+    
     return None
+
+
+def get_user_from_token(token: str) -> Optional[str]:
+    """
+    Get user email from token.
+    Returns email if token is valid, None otherwise.
+    """
+    if not token:
+        return None
+    return token_storage.get(token)
 

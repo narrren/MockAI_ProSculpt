@@ -41,9 +41,9 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
         }
       );
 
-      if (response.data.status === 'success') {
+      if (response.data.status === 'success' || response.data.status === 'otp_sent') {
         setStep('verify');
-        // If OTP is included in response (fallback if email fails), show it
+        // If OTP is included in response (always included now), show it
         if (response.data.otp) {
           setMessage(`${response.data.message}\n\n🔑 Your OTP: ${response.data.otp}\n\n(If you don't receive the email, check your spam folder or use this OTP.)`);
         } else {
@@ -94,10 +94,22 @@ const Signup = ({ onSignupSuccess, onSwitchToLogin }) => {
       );
 
       if (response.data.status === 'success') {
-        localStorage.setItem('auth_token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Store token and user
+        const token = response.data.token;
+        const userData = response.data.user || {};
+        
+        // Include token in userData so handlers can access it
+        if (token) {
+          userData.token = token;
+          localStorage.setItem('auth_token', token);
+          console.log('[Signup] Token stored:', token.substring(0, 20) + '...');
+        } else {
+          console.error('[Signup] No token in response!', response.data);
+        }
+        
+        localStorage.setItem('user', JSON.stringify(userData));
         if (onSignupSuccess) {
-          onSignupSuccess(response.data.user);
+          onSignupSuccess(userData);
         }
       } else {
         setError(response.data.message || 'OTP verification failed');

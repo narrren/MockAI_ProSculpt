@@ -6,7 +6,7 @@ from ai_interviewer import InterviewerAI
 from code_engine import execute_code, execute_sql_query
 from auth import (
     register_user, verify_otp, login_user, verify_login_otp, 
-    verify_token, TEST_EMAIL, TEST_PASSWORD
+    verify_token, get_user_from_token, TEST_EMAIL, TEST_PASSWORD
 )
 from interview_session import InterviewSession, active_sessions
 from analytics import AnalyticsEngine
@@ -24,6 +24,7 @@ import base64
 import os
 from pydantic import BaseModel
 from typing import Optional, Dict, List
+from urllib.parse import unquote
 import time
 from datetime import datetime
 import tempfile
@@ -67,6 +68,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# Initialize database FIRST (before other services)
+print("=" * 50)
+print("Initializing Database...")
+init_db()
+print("Database initialized successfully")
+print("=" * 50)
+
 # Initialize AI and Proctor
 system_prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "interviewer_persona.txt")
 print("=" * 50)
@@ -74,15 +82,138 @@ print("Initializing InterviewerAI...")
 ai = InterviewerAI(system_prompt_path=system_prompt_path)
 print(f"InterviewerAI initialized with model: {ai.model_name}")
 print("=" * 50)
-proctor = Proctor()
-code_revision = CodeRevision()
-resume_parser = ResumeParser()
-system_design_analyzer = SystemDesignAnalyzer()
-multi_file_editor = MultiFileEditor()
-realtime_feedback = RealtimeFeedback()
 
-# Initialize database
-init_db()
+print("Initializing Proctor...")
+proctor = Proctor()
+print("Proctor initialized")
+
+print("Initializing Code Revision...")
+code_revision = CodeRevision()
+print("Code Revision initialized")
+
+print("Initializing Resume Parser...")
+resume_parser = ResumeParser()
+print("Resume Parser initialized")
+
+print("Initializing System Design Analyzer...")
+system_design_analyzer = SystemDesignAnalyzer()
+print("System Design Analyzer initialized")
+
+print("Initializing Multi File Editor...")
+multi_file_editor = MultiFileEditor()
+print("Multi File Editor initialized")
+
+print("Initializing Realtime Feedback...")
+realtime_feedback = RealtimeFeedback()
+print("Realtime Feedback initialized")
+
+print("=" * 50)
+print("All services initialized successfully!")
+print("=" * 50)
+
+# Validate email configuration on startup
+print("=" * 50)
+print("Validating Email Configuration...")
+print("=" * 50)
+try:
+    from auth import validate_email_config
+    email_validation = validate_email_config()
+    if email_validation.get("valid"):
+        print("✅ Email configuration is valid and ready!")
+    else:
+        print(f"⚠️  Email configuration issue: {email_validation.get('message')}")
+        print("⚠️  OTP will be shown in console instead of email")
+        print("⚠️  To fix: Update EMAIL_FROM and EMAIL_PASSWORD in backend/.env")
+except Exception as e:
+    print(f"⚠️  Could not validate email configuration: {e}")
+    print("⚠️  OTP will be shown in console instead of email")
+print("=" * 50)
+
+# Authentication dependency
+security = HTTPBearer(auto_error=False)  # Don't auto-raise on missing token
+
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """
+    Get current authenticated user from token.
+    Returns User object if token is valid, raises HTTPException otherwise.
+    """
+    try:
+        # Check if credentials were provided
+        if not credentials:
+            print("[AUTH] ❌ No credentials provided - Authorization header missing")
+            raise HTTPException(status_code=401, detail="Authentication required. Please log in again.")
+        
+        token = credentials.credentials if credentials else None
+        if not token:
+            print("[AUTH] ❌ No token in credentials")
+            raise HTTPException(status_code=401, detail="Authentication required. Please log in again.")
+        
+        # Validate token format
+        if token in ['authenticated', 'null', 'undefined'] or len(token) < 20:
+            print(f"[AUTH] ❌ Invalid token format: {token}")
+            raise HTTPException(status_code=401, detail="Invalid token format. Please log in again.")
+        
+        print(f"[AUTH] ✅ Token received: {token[:20]}... (length: {len(token)})")
+        
+        # Check token_storage
+        from auth import token_storage
+        print(f"[AUTH] Token storage has {len(token_storage)} tokens")
+        if token in token_storage:
+            print(f"[AUTH] ✅ Token found in storage")
+        else:
+            print(f"[AUTH] ❌ Token NOT found in storage")
+            print(f"[AUTH] Available tokens (first 3): {list(token_storage.keys())[:3] if token_storage else 'empty'}")
+            print(f"[AUTH] Full token storage keys: {list(token_storage.keys())}")
+            raise HTTPException(status_code=401, detail="Invalid or expired token. Please log in again.")
+        
+        email = get_user_from_token(token)
+        if not email:
+            print(f"[AUTH] ❌ get_user_from_token returned None for token: {token[:20]}...")
+            raise HTTPException(status_code=401, detail="Invalid or expired token. Please log in again.")
+        
+        print(f"[AUTH] ✅ Token valid for user: {email}")
+        
+        # Get user from database
+        db = next(get_db())
+        try:
+            user = db.query(User).filter(User.email == email).first()
+            if not user:
+                print(f"[AUTH] ❌ User not found in database: {email}")
+                raise HTTPException(status_code=404, detail="User not found. Please sign up again.")
+            print(f"[AUTH] ✅ User authenticated: {user.email} (ID: {user.id})")
+            return user
+        finally:
+            db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[AUTH] ❌ Error in get_current_user: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=401, detail=f"Authentication error: {str(e)}")
+
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """
+    Get current authenticated user from token (optional).
+    Returns user email if token is valid, None otherwise.
+    """
+    try:
+        if not credentials:
+            return None
+        token = credentials.credentials
+        if not token:
+            return None
+        email = get_user_from_token(token)
+        if not email:
+            return None
+        db = next(get_db())
+        try:
+            user = db.query(User).filter(User.email == email).first()
+            return user
+        finally:
+            db.close()
+    except:
+        return None
 
 
 class ChatMessage(BaseModel):
@@ -135,18 +266,6 @@ class RealtimeCodeCheckRequest(BaseModel):
     question: str
 
 
-security = HTTPBearer()
-
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify token and return user"""
-    token = credentials.credentials
-    user = verify_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return user
-
-
 @app.get("/")
 async def root():
     return {
@@ -178,27 +297,8 @@ async def register_endpoint(data: RegisterRequest):
     """Register a new user and send OTP"""
     result = register_user(data.email, data.name)
     
-    # If OTP was generated but email might not have been sent, include OTP in response for testing
-    # (Only if email is not configured - for development/testing purposes)
-    import os
-    # Only include OTP in response if email is NOT properly configured (for testing/fallback)
-    from auth import ENABLE_EMAIL, EMAIL_PASSWORD, EMAIL_FROM
-    email_configured = ENABLE_EMAIL and EMAIL_PASSWORD and EMAIL_FROM and EMAIL_FROM != "your-email@gmail.com" and "@" in EMAIL_FROM
-    
-    # Debug logging
-    print(f"[API /register] Email config check:")
-    print(f"[API /register]   ENABLE_EMAIL: {ENABLE_EMAIL}")
-    print(f"[API /register]   EMAIL_PASSWORD set: {bool(EMAIL_PASSWORD)}")
-    print(f"[API /register]   EMAIL_FROM: {EMAIL_FROM}")
-    print(f"[API /register]   email_configured: {email_configured}")
-    
-    if result.get("status") == "success" and not email_configured:
-        # Get the OTP from storage to include in response (for testing only when email not configured)
-        from auth import otp_storage
-        if data.email.lower().strip() in otp_storage:
-            result["otp"] = otp_storage[data.email.lower().strip()]["otp"]
-            result["message"] += f" (Email not configured - OTP: {result['otp']} - Check backend console for details)"
-    
+    # OTP is now always included in the response from send_otp_email if email is not configured
+    # The OTP is also always printed to console
     return result
 
 
@@ -240,26 +340,8 @@ async def login_endpoint(data: LoginRequest):
                 error_msg = "Login failed"
             raise Exception(error_msg) from None
         
-        # Only include OTP in response if email is NOT properly configured (for testing/fallback)
-        from auth import ENABLE_EMAIL, EMAIL_PASSWORD, EMAIL_FROM, otp_storage
-        email_configured = ENABLE_EMAIL and EMAIL_PASSWORD and EMAIL_FROM and EMAIL_FROM != "your-email@gmail.com" and "@" in EMAIL_FROM
-        
-        # Debug logging with safe encoding
-        try:
-            print(f"[API /login] Email config check:")
-            print(f"[API /login]   ENABLE_EMAIL: {ENABLE_EMAIL}")
-            print(f"[API /login]   EMAIL_PASSWORD set: {bool(EMAIL_PASSWORD)}")
-            print(f"[API /login]   EMAIL_FROM: {EMAIL_FROM}")
-            print(f"[API /login]   email_configured: {email_configured}")
-        except UnicodeEncodeError:
-            pass  # Skip debug logging if encoding fails
-        
-        if result.get("status") == "otp_required" and not email_configured:
-            # Get the OTP from storage to include in response (for testing only when email not configured)
-            email_lower = data.email.lower().strip()
-            if email_lower in otp_storage:
-                result["otp"] = otp_storage[email_lower]["otp"]
-                result["message"] += f" (Email not configured - OTP: {result['otp']} - Check backend console for details)"
+        # OTP is now always included in the response from send_otp_email if email is not configured
+        # The OTP is also always printed to console
         
         # Sanitize ALL result fields to ensure no emojis
         if isinstance(result, dict):
@@ -735,9 +817,166 @@ async def get_skills(user_id: str):
     }
 
 
+@app.get("/user/career-blueprint")
+async def get_user_career_blueprint(current_user: User = Depends(get_current_user)):
+    """Get career blueprint based on user's resume and interview performance"""
+    db = next(get_db())
+    try:
+        # Get user's resume data
+        resume_data = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).first()
+        
+        # Get user's interview sessions for performance data
+        sessions = db.query(DBSession).filter(DBSession.user_id == current_user.id).all()
+        
+        # Default values
+        career_level = "Junior Developer"
+        skill_gaps = ["System Design"]
+        estimated_time_to_senior = "6 Months"
+        estimated_time_to_staff = "2 Years"
+        
+        if resume_data:
+            print(f"[CAREER BLUEPRINT] Processing resume for user {current_user.id}")
+            
+            # Parse analysis from raw_text
+            import json
+            analysis_data = {}
+            summary = ""
+            if resume_data.raw_text and "|||ANALYSIS|||" in resume_data.raw_text:
+                try:
+                    parts = resume_data.raw_text.split("|||ANALYSIS|||")
+                    if len(parts) > 1:
+                        metadata = json.loads(parts[1])
+                        analysis_data = metadata.get("analysis", {})
+                        summary = metadata.get("summary", "")
+                        print(f"[CAREER BLUEPRINT] Found analysis data: {bool(analysis_data)}")
+                except Exception as e:
+                    print(f"[CAREER BLUEPRINT] Error parsing analysis: {e}")
+            
+            # Get skills, experience, and education from resume
+            skills = resume_data.skills or []
+            experience = resume_data.experience or []
+            education = resume_data.education or []
+            
+            print(f"[CAREER BLUEPRINT] Resume data - Skills: {len(skills)}, Experience: {len(experience)}, Education: {len(education)}")
+            
+            # Calculate years of experience from experience entries
+            total_years = 0
+            if experience:
+                for exp in experience:
+                    if isinstance(exp, dict):
+                        duration = exp.get("duration", "") or exp.get("period", "") or ""
+                        # Try to extract years from duration string (e.g., "2 years", "24 months")
+                        import re
+                        years_match = re.search(r'(\d+)\s*(?:year|yr|y)', duration.lower())
+                        months_match = re.search(r'(\d+)\s*(?:month|mo)', duration.lower())
+                        if years_match:
+                            total_years += int(years_match.group(1))
+                        elif months_match:
+                            total_years += int(months_match.group(1)) / 12
+            
+            # Determine career level from analysis or calculated experience
+            years_exp = 0
+            if analysis_data:
+                years_exp = analysis_data.get("years_of_experience", 0)
+                if isinstance(years_exp, str):
+                    # Try to extract number from string
+                    import re
+                    numbers = re.findall(r'\d+', years_exp)
+                    years_exp = int(numbers[0]) if numbers else 0
+                elif not isinstance(years_exp, (int, float)):
+                    years_exp = 0
+                
+                # Use career level from analysis if available
+                career_level = analysis_data.get("career_level", "")
+            
+            # If no years from analysis, use calculated total
+            if years_exp == 0:
+                years_exp = total_years
+            
+            # Determine career level based on experience
+            if not career_level or career_level == "Junior Developer":
+                if years_exp >= 5:
+                    career_level = "Senior Engineer"
+                    estimated_time_to_senior = "Current"
+                    estimated_time_to_staff = "1 Year"
+                elif years_exp >= 3:
+                    career_level = "Mid-Level Engineer"
+                    estimated_time_to_senior = "3 Months"
+                    estimated_time_to_staff = "1.5 Years"
+                elif years_exp >= 1:
+                    career_level = "Junior Developer"
+                    estimated_time_to_senior = "6 Months"
+                    estimated_time_to_staff = "2 Years"
+                else:
+                    career_level = "Entry Level"
+                    estimated_time_to_senior = "1 Year"
+                    estimated_time_to_staff = "2.5 Years"
+            
+            print(f"[CAREER BLUEPRINT] Career level: {career_level}, Years exp: {years_exp}")
+            
+            # Determine skill gaps from actual resume skills
+            skill_names = [s.lower() if isinstance(s, str) else str(s).lower() for s in skills]
+            all_skills_text = " ".join(skill_names)
+            
+            # Check for missing important skills based on career level
+            missing_skills = []
+            
+            # For all levels
+            if "system design" not in all_skills_text and "architecture" not in all_skills_text and "distributed" not in all_skills_text:
+                missing_skills.append("System Design")
+            
+            # For mid-level and above
+            if years_exp >= 3:
+                if "docker" not in all_skills_text and "kubernetes" not in all_skills_text and "container" not in all_skills_text:
+                    missing_skills.append("DevOps")
+                if "aws" not in all_skills_text and "azure" not in all_skills_text and "gcp" not in all_skills_text and "cloud" not in all_skills_text:
+                    missing_skills.append("Cloud Infrastructure")
+            
+            # For senior level
+            if years_exp >= 5:
+                if "leadership" not in all_skills_text and "mentor" not in all_skills_text and "team" not in all_skills_text:
+                    missing_skills.append("Leadership")
+                if "microservices" not in all_skills_text and "api" not in all_skills_text:
+                    missing_skills.append("Microservices Architecture")
+            
+            # Check for common missing skills
+            if not any(term in all_skills_text for term in ["testing", "test", "qa", "tdd", "unit test"]):
+                missing_skills.append("Testing & QA")
+            
+            if not any(term in all_skills_text for term in ["database", "sql", "nosql", "mongodb", "postgres", "mysql"]):
+                missing_skills.append("Database Design")
+            
+            # Use actual skill gaps or defaults
+            if missing_skills:
+                skill_gaps = missing_skills[:3]  # Top 3 skill gaps
+            else:
+                skill_gaps = ["System Design"]  # Default if no gaps found
+            
+            print(f"[CAREER BLUEPRINT] Skill gaps identified: {skill_gaps}")
+        
+        # Calculate progress based on interviews completed
+        interviews_completed = len(sessions)
+        progress_percentage = min(50 + (interviews_completed * 10), 100)
+        
+        result = {
+            "career_level": career_level,
+            "skill_gaps": skill_gaps,
+            "estimated_time_to_senior": estimated_time_to_senior,
+            "estimated_time_to_staff": estimated_time_to_staff,
+            "progress_percentage": progress_percentage,
+            "interviews_completed": interviews_completed,
+            "has_resume": resume_data is not None
+        }
+        
+        print(f"[CAREER BLUEPRINT] Returning blueprint: {result}")
+        return result
+    finally:
+        db.close()
+
+# Keep old endpoint for backward compatibility
 @app.get("/session/{user_id}/blueprint")
 async def get_career_blueprint(user_id: str):
-    """Generate AI Interview Blueprint"""
+    """Generate AI Interview Blueprint (deprecated - use /user/career-blueprint)"""
     # Try to get active session, or create a default one with some data
     if user_id not in active_sessions:
         # Create a default session with minimal data for demo
@@ -865,20 +1104,60 @@ async def get_proctoring_insights(user_id: str):
 # ===== Advanced Features Endpoints =====
 
 @app.post("/resume/upload")
-async def upload_resume(file: UploadFile = File(...), user_id: str = Form(...)):
-    """Upload and parse resume PDF"""
+async def upload_resume(
+    file: UploadFile = File(...), 
+    current_user: User = Depends(get_current_user)
+):
+    """Upload and parse resume PDF for the authenticated user"""
     try:
-        if not user_id:
+        print(f"[RESUME UPLOAD] Upload request from user: {current_user.email} (ID: {current_user.id})")
+        
+        # Validate file
+        if not file:
+            print("[RESUME UPLOAD] [ERROR] No file provided")
             return {
                 "status": "error",
-                "error": "user_id is required"
+                "error": "No file provided"
+            }
+        
+        print(f"[RESUME UPLOAD] File received: {file.filename}, Content-Type: {file.content_type}")
+        
+        # Check file type
+        if file.content_type not in ['application/pdf', 'application/octet-stream']:
+            # Check filename extension as fallback
+            if not file.filename or not file.filename.lower().endswith('.pdf'):
+                print(f"[RESUME UPLOAD] [ERROR] Invalid file type: {file.content_type}")
+                return {
+                    "status": "error",
+                    "error": "Only PDF files are allowed"
+                }
+        
+        # Read file content to check size
+        file_content = await file.read()
+        file_size = len(file_content)
+        print(f"[RESUME UPLOAD] File size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
+        
+        # Check file size (max 5MB)
+        if file_size > 5 * 1024 * 1024:  # 5MB
+            print(f"[RESUME UPLOAD] [ERROR] File too large: {file_size} bytes")
+            return {
+                "status": "error",
+                "error": "File size exceeds 5MB limit"
+            }
+        
+        if file_size == 0:
+            print("[RESUME UPLOAD] [ERROR] File is empty")
+            return {
+                "status": "error",
+                "error": "File is empty"
             }
         
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-            content = await file.read()
-            tmp_file.write(content)
+            tmp_file.write(file_content)
             tmp_path = tmp_file.name
+        
+        print(f"[RESUME UPLOAD] File saved to temporary location: {tmp_path}")
         
         # Parse resume
         result = resume_parser.parse_pdf(tmp_path)
@@ -890,16 +1169,10 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Form(...)):
                 "error": result["error"]
             }
         
-        # Get user from database by email
+        # Use authenticated user (no need to query by email)
         db = next(get_db())
         try:
-            user = db.query(User).filter(User.email == user_id.lower().strip()).first()
-            if not user:
-                os.unlink(tmp_path)
-                return {
-                    "status": "error",
-                    "error": "User not found"
-                }
+            user = current_user  # Already authenticated
             
             # Save or update resume data with comprehensive analysis
             resume_data = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
@@ -917,13 +1190,23 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Form(...)):
                 "contact_info": result.get("contact_info", {})
             }
             
+            # Store analysis metadata as JSON in raw_text (append after separator)
+            import json
+            analysis_metadata = {
+                "analysis": resume_dict["analysis"],
+                "summary": resume_dict["summary"],
+                "certifications": resume_dict["certifications"],
+                "projects": resume_dict["projects"],
+                "contact_info": resume_dict["contact_info"]
+            }
+            metadata_json = json.dumps(analysis_metadata)
+            raw_text_with_metadata = resume_dict["raw_text"] + "\n\n|||ANALYSIS|||" + metadata_json
+            
             if resume_data:
                 resume_data.skills = resume_dict["skills"]
                 resume_data.experience = resume_dict["experience"]
                 resume_data.education = resume_dict["education"]
-                resume_data.raw_text = resume_dict["raw_text"]
-                # Store additional analysis in raw_text or create a new field (for now, append to raw_text metadata)
-                # In production, you might want to add separate columns for these
+                resume_data.raw_text = raw_text_with_metadata
                 resume_data.uploaded_at = datetime.now()
                 print(f"[RESUME UPLOAD] Updated resume with {len(resume_dict['skills'])} skills, {len(resume_dict['experience'])} experiences")
                 print(f"[RESUME UPLOAD] Analysis summary: {resume_dict.get('summary', 'N/A')[:100]}...")
@@ -933,23 +1216,46 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Form(...)):
                     skills=resume_dict["skills"],
                     experience=resume_dict["experience"],
                     education=resume_dict["education"],
-                    raw_text=resume_dict["raw_text"],
+                    raw_text=raw_text_with_metadata,
                     uploaded_at=datetime.now()
                 )
                 db.add(resume_data)
                 print(f"[RESUME UPLOAD] Created new resume record with {len(resume_dict['skills'])} skills")
             
-            # Store additional analysis data (we'll extend the JSON fields or add metadata)
-            # For now, we'll include it in the response
-            
             # Mark user as having uploaded resume in auth system
-            from auth import users_db
+            from auth import users_db, TEST_EMAIL
             if user.email in users_db:
                 users_db[user.email]["has_resume"] = True
                 users_db[user.email]["resume_uploaded_at"] = datetime.now().isoformat()
+                print(f"[RESUME UPLOAD] Updated has_resume flag for {user.email} in users_db")
+            
+            # Also update test user's has_resume flag if this is a test user
+            if user.email == TEST_EMAIL:
+                print(f"[RESUME UPLOAD] Test user resume uploaded - has_resume flag updated")
+                # Ensure test user is in users_db
+                if TEST_EMAIL not in users_db:
+                    from auth import TEST_NAME
+                    users_db[TEST_EMAIL] = {
+                        "email": TEST_EMAIL,
+                        "name": TEST_NAME,
+                        "is_test": True,
+                        "has_resume": True
+                    }
+                else:
+                    users_db[TEST_EMAIL]["has_resume"] = True
             
             db.commit()
             db.refresh(resume_data)  # Refresh to ensure data is available
+            
+            # Verify the data was saved
+            print(f"[RESUME UPLOAD] Verifying save - User ID: {user.id}")
+            verify_resume = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
+            if verify_resume:
+                print(f"[RESUME UPLOAD] ✅ Verification: Resume found in database")
+                print(f"[RESUME UPLOAD]   - Resume ID: {verify_resume.id}")
+                print(f"[RESUME UPLOAD]   - Skills count: {len(verify_resume.skills or [])}")
+            else:
+                print(f"[RESUME UPLOAD] ❌ Verification: Resume NOT found in database!")
             
             print(f"[RESUME UPLOAD] [OK] Resume fully analyzed and saved for user {user.email}")
             print(f"[RESUME UPLOAD]   - Skills: {len(resume_dict['skills'])}")
@@ -992,53 +1298,42 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Form(...)):
                 "total_projects": len(resume_dict.get("projects", []))
             }
         }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except HTTPException as he:
+        # Authentication or authorization errors
+        print(f"[RESUME UPLOAD] [ERROR] HTTP Exception: {he.detail}")
         return {
             "status": "error",
-            "error": str(e)
+            "error": f"Authentication failed: {he.detail}. Please log in again."
+        }
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"[RESUME UPLOAD] [ERROR] {error_msg}")
+        traceback.print_exc()
+        
+        # Provide user-friendly error messages
+        if "Authentication" in error_msg or "token" in error_msg.lower():
+            error_msg = "Authentication failed. Please log in again."
+        elif "database" in error_msg.lower() or "connection" in error_msg.lower():
+            error_msg = "Database error. Please try again later."
+        elif "parse" in error_msg.lower() or "pdf" in error_msg.lower():
+            error_msg = "Failed to parse PDF. Please ensure the file is a valid PDF."
+        else:
+            error_msg = f"Upload failed: {error_msg}"
+        
+        return {
+            "status": "error",
+            "error": error_msg
         }
 
 
-@app.get("/user/{user_id}/resume-status")
-async def get_resume_status(user_id: str):
-    """Check if user has uploaded a resume"""
+@app.get("/user/resume-status")
+async def get_resume_status(current_user: User = Depends(get_current_user)):
+    """Check if the authenticated user has uploaded a resume"""
     try:
-        from auth import users_db, TEST_EMAIL
-        from urllib.parse import unquote
-        # FastAPI automatically decodes URL-encoded path parameters
-        email = unquote(user_id).lower().strip()
-        print(f"[RESUME STATUS] Received user_id: {user_id}, decoded: {email}")
-        
-        # For test users, check in-memory first, then database
-        if email == TEST_EMAIL:
-            db = next(get_db())
-            try:
-                user = db.query(User).filter(User.email == email).first()
-                if user:
-                    resume_data = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
-                    return {
-                        "has_resume": resume_data is not None
-                    }
-                # Test user not in DB yet, return False (they can upload later)
-                return {
-                    "has_resume": False
-                }
-            finally:
-                db.close()
-        
-        # Regular user - check database
         db = next(get_db())
         try:
-            user = db.query(User).filter(User.email == email).first()
-            if not user:
-                return {
-                    "has_resume": False,
-                    "message": "User not found"
-                }
-            
-            resume_data = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
+            resume_data = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).first()
             has_resume = resume_data is not None
             
             result = {
@@ -1059,114 +1354,233 @@ async def get_resume_status(user_id: str):
         }
 
 
-@app.get("/user/{user_id}/profile")
-async def get_user_profile(user_id: str):
-    """Get user profile information"""
+@app.get("/user/profile")
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    """Get authenticated user's profile information"""
     try:
-        from auth import users_db, TEST_EMAIL, hash_password
-        from urllib.parse import unquote
-        # FastAPI automatically decodes URL-encoded path parameters, but let's be explicit
-        email = unquote(user_id).lower().strip()
-        print(f"[PROFILE ENDPOINT] Received user_id: {user_id}")
-        print(f"[PROFILE ENDPOINT] Decoded email: {email}")
-        
-        # Check if this is a test user and get from in-memory storage first
-        if email == TEST_EMAIL:
-            if email in users_db:
-                user_data = users_db[email]
-                # Try to get resume from database if user exists there
-                db = next(get_db())
-                try:
-                    db_user = db.query(User).filter(User.email == email).first()
-                    resume_data = None
-                    if db_user:
-                        resume_data = db.query(ResumeData).filter(ResumeData.user_id == db_user.id).first()
-                    
-                    profile = {
-                        "status": "success",
-                        "email": user_data.get("email", email),
-                        "name": user_data.get("name", "Test User"),
-                        "created_at": user_data.get("created_at"),
-                        "last_login": user_data.get("last_login"),
-                        "has_resume": resume_data is not None,
-                        "is_test": True
-                    }
-                    
-                    if resume_data:
-                        profile["resume"] = {
-                            "uploaded_at": resume_data.uploaded_at.isoformat() if resume_data.uploaded_at else None,
-                            "skills": resume_data.skills or [],
-                            "experience": resume_data.experience or [],
-                            "education": resume_data.education or [],
-                            "raw_text": resume_data.raw_text or ""
-                        }
-                    
-                    return profile
-                finally:
-                    db.close()
-            else:
-                # Test user not in memory, return default profile
-                return {
-                    "status": "success",
-                    "email": email,
-                    "name": "Test User",
-                    "created_at": None,
-                    "last_login": None,
-                    "has_resume": False,
-                    "is_test": True
-                }
-        
-        # Regular user - check database
         db = next(get_db())
         try:
-            user = db.query(User).filter(User.email == email).first()
-            if not user:
-                # User not in database, check if in memory (might be new)
-                if email in users_db:
-                    user_data = users_db[email]
-                    return {
-                        "status": "success",
-                        "email": user_data.get("email", email),
-                        "name": user_data.get("name", "User"),
-                        "created_at": user_data.get("created_at"),
-                        "last_login": user_data.get("last_login"),
-                        "has_resume": False
-                    }
-                return {
-                    "status": "error",
-                    "message": "User not found"
-                }
-            
-            resume_data = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
+            # Query resume data
+            resume_data = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).first()
             has_resume = resume_data is not None
+            
+            print(f"[PROFILE] ===== PROFILE REQUEST =====")
+            print(f"[PROFILE] User ID: {current_user.id}, Email: {current_user.email}")
+            print(f"[PROFILE] Resume data query result: {resume_data}")
+            print(f"[PROFILE] Resume data is None: {resume_data is None}")
+            print(f"[PROFILE] has_resume: {has_resume}")
+            
+            if resume_data:
+                print(f"[PROFILE] ✅ Resume found!")
+                print(f"[PROFILE]   - Resume ID: {resume_data.id}")
+                print(f"[PROFILE]   - User ID in resume: {resume_data.user_id}")
+                print(f"[PROFILE]   - Skills: {resume_data.skills}")
+                print(f"[PROFILE]   - Experience: {resume_data.experience}")
+                print(f"[PROFILE]   - Education: {resume_data.education}")
+            else:
+                print(f"[PROFILE] ❌ No resume found in database")
+                # Check all resumes to debug
+                all_resumes = db.query(ResumeData).all()
+                print(f"[PROFILE]   - Total resumes in DB: {len(all_resumes)}")
+                for r in all_resumes[:5]:  # Show first 5
+                    print(f"[PROFILE]   - Resume ID {r.id}: user_id={r.user_id} (User email: {r.user.email if r.user else 'N/A'})")
             
             profile = {
                 "status": "success",
-                "email": user.email,
-                "name": user.name,
-                "created_at": user.created_at.isoformat() if user.created_at else None,
-                "last_login": user.last_login.isoformat() if user.last_login else None,
-                "has_resume": has_resume
+                "email": current_user.email,
+                "name": current_user.name,
+                "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+                "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
+                "has_resume": has_resume,
+                "is_test": current_user.email == TEST_EMAIL
             }
             
-            if resume_data and has_resume:
-                profile["resume"] = {
-                    "uploaded_at": resume_data.uploaded_at.isoformat() if resume_data.uploaded_at else None,
-                    "skills": resume_data.skills or [],
-                    "experience": resume_data.experience or [],
-                    "education": resume_data.education or [],
-                    "raw_text": resume_data.raw_text or ""
-                }
-                print(f"[PROFILE] [OK] Resume found for {email}")
-                print(f"[PROFILE]   - Skills: {len(resume_data.skills or [])}")
-                print(f"[PROFILE]   - Experience: {len(resume_data.experience or [])}")
-                print(f"[PROFILE]   - Education: {len(resume_data.education or [])}")
-                print(f"[PROFILE]   - Uploaded at: {resume_data.uploaded_at}")
-            else:
-                print(f"[PROFILE] [ERROR] No resume found for {email}")
-                print(f"[PROFILE]   - User ID: {user.id}")
-                print(f"[PROFILE]   - Resume data query result: {resume_data}")
+            # Always include resume data if it exists
+            if resume_data:
+                print(f"[PROFILE] [DEBUG] Processing resume_data for user {current_user.id}")
+                # Initialize defaults
+                import json
+                analysis_data = {}
+                summary = ""
+                certifications = []
+                projects = []
+                contact_info = {}
+                
+                # Try to extract analysis from raw_text if it contains JSON metadata
+                try:
+                    if resume_data.raw_text:
+                        # Check if raw_text contains JSON metadata at the end
+                        if "|||ANALYSIS|||" in resume_data.raw_text:
+                            parts = resume_data.raw_text.split("|||ANALYSIS|||")
+                            if len(parts) > 1:
+                                metadata = json.loads(parts[1])
+                                analysis_data = metadata.get("analysis", {})
+                                summary = metadata.get("summary", "")
+                                certifications = metadata.get("certifications", [])
+                                projects = metadata.get("projects", [])
+                                contact_info = metadata.get("contact_info", {})
+                except Exception as parse_error:
+                    print(f"[PROFILE] [WARNING] Error parsing analysis metadata: {parse_error}")
+                
+                # Always add resume data - use safe accessors with explicit error handling
+                uploaded_at = None
+                skills = []
+                experience = []
+                education = []
+                raw_text = ""
+                
+                try:
+                    if resume_data.uploaded_at:
+                        uploaded_at = resume_data.uploaded_at.isoformat() if hasattr(resume_data.uploaded_at, 'isoformat') else str(resume_data.uploaded_at)
+                except Exception as e:
+                    print(f"[PROFILE] [WARNING] Error getting uploaded_at: {e}")
+                
+                try:
+                    skills = resume_data.skills if resume_data.skills is not None else []
+                except Exception as e:
+                    print(f"[PROFILE] [WARNING] Error getting skills: {e}")
+                    skills = []
+                
+                try:
+                    experience = resume_data.experience if resume_data.experience is not None else []
+                except Exception as e:
+                    print(f"[PROFILE] [WARNING] Error getting experience: {e}")
+                    experience = []
+                
+                try:
+                    education = resume_data.education if resume_data.education is not None else []
+                except Exception as e:
+                    print(f"[PROFILE] [WARNING] Error getting education: {e}")
+                    education = []
+                
+                try:
+                    raw_text = resume_data.raw_text if resume_data.raw_text is not None else ""
+                except Exception as e:
+                    print(f"[PROFILE] [WARNING] Error getting raw_text: {e}")
+                    raw_text = ""
+                
+                # Now add resume to profile - this should NEVER fail
+                try:
+                    profile["resume"] = {
+                        "uploaded_at": uploaded_at,
+                        "skills": skills,
+                        "experience": experience,
+                        "education": education,
+                        "raw_text": raw_text,
+                        "summary": summary,
+                        "analysis": analysis_data,
+                        "certifications": certifications,
+                        "projects": projects,
+                        "contact_info": contact_info
+                    }
+                    print(f"[PROFILE] ✅ Resume data added to profile successfully")
+                    print(f"[PROFILE]   - Skills count: {len(skills)}")
+                    print(f"[PROFILE]   - Experience count: {len(experience)}")
+                    print(f"[PROFILE]   - Education count: {len(education)}")
+                    print(f"[PROFILE]   - Has summary: {bool(summary)}")
+                    print(f"[PROFILE]   - Has analysis: {bool(analysis_data)}")
+                except Exception as resume_error:
+                    print(f"[PROFILE] ❌ CRITICAL ERROR adding resume dict to profile: {resume_error}")
+                    import traceback
+                    traceback.print_exc()
+                    # Last resort - add minimal resume object
+                    profile["resume"] = {
+                        "uploaded_at": None,
+                        "skills": [],
+                        "experience": [],
+                        "education": [],
+                        "raw_text": "",
+                        "summary": "",
+                        "analysis": {},
+                        "certifications": [],
+                        "projects": [],
+                        "contact_info": {}
+                    }
+                    print(f"[PROFILE] ⚠️ Added minimal resume object as fallback")
+            if not resume_data:
+                print(f"[PROFILE] [INFO] No resume found for {current_user.email}")
+                print(f"[PROFILE]   - User ID: {current_user.id}")
+                print(f"[PROFILE]   - Is test user: {current_user.email == TEST_EMAIL}")
+                # Check if there are any resume records for this user
+                all_resumes = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).all()
+                print(f"[PROFILE]   - Total resume records for user: {len(all_resumes)}")
+                if len(all_resumes) > 0:
+                    print(f"[PROFILE]   - Found {len(all_resumes)} resume(s) but query returned None!")
+                    print(f"[PROFILE]   - First resume user_id: {all_resumes[0].user_id}")
+                    print(f"[PROFILE]   - Current user id: {current_user.id}")
+                    print(f"[PROFILE]   - IDs match: {all_resumes[0].user_id == current_user.id}")
             
+            # Final check: if has_resume is True but resume not in profile, something went wrong
+            if has_resume and 'resume' not in profile:
+                print(f"[PROFILE] ⚠️ CRITICAL: has_resume=True but resume not in profile!")
+                print(f"[PROFILE]   - This should not happen - resume_data should have been added")
+                print(f"[PROFILE]   - Re-querying resume data...")
+                # Try one more time to get resume data
+                retry_resume = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).first()
+                if retry_resume:
+                    print(f"[PROFILE]   - Found resume on retry, adding to profile")
+                    import json
+                    analysis_data = {}
+                    summary = ""
+                    certifications = []
+                    projects = []
+                    contact_info = {}
+                    try:
+                        if retry_resume.raw_text and "|||ANALYSIS|||" in retry_resume.raw_text:
+                            parts = retry_resume.raw_text.split("|||ANALYSIS|||")
+                            if len(parts) > 1:
+                                metadata = json.loads(parts[1])
+                                analysis_data = metadata.get("analysis", {})
+                                summary = metadata.get("summary", "")
+                                certifications = metadata.get("certifications", [])
+                                projects = metadata.get("projects", [])
+                                contact_info = metadata.get("contact_info", {})
+                    except:
+                        pass
+                    profile["resume"] = {
+                        "uploaded_at": retry_resume.uploaded_at.isoformat() if retry_resume.uploaded_at else None,
+                        "skills": retry_resume.skills or [],
+                        "experience": retry_resume.experience or [],
+                        "education": retry_resume.education or [],
+                        "raw_text": retry_resume.raw_text or "",
+                        "summary": summary,
+                        "analysis": analysis_data,
+                        "certifications": certifications,
+                        "projects": projects,
+                        "contact_info": contact_info
+                    }
+                    print(f"[PROFILE]   - Resume added to profile on retry")
+                else:
+                    print(f"[PROFILE]   - Still no resume found on retry - setting has_resume=False")
+                    profile["has_resume"] = False
+            
+            # ABSOLUTE FINAL CHECK: Ensure resume is in profile if has_resume is True
+            if profile.get('has_resume') and 'resume' not in profile:
+                print(f"[PROFILE] ⚠️⚠️⚠️ CRITICAL: has_resume=True but resume missing! Adding minimal resume NOW!")
+                profile["resume"] = {
+                    "uploaded_at": None,
+                    "skills": [],
+                    "experience": [],
+                    "education": [],
+                    "raw_text": "",
+                    "summary": "",
+                    "analysis": {},
+                    "certifications": [],
+                    "projects": [],
+                    "contact_info": {}
+                }
+                print(f"[PROFILE] ⚠️ Added minimal resume object as absolute last resort")
+            
+            print(f"[PROFILE] ===== RETURNING PROFILE =====")
+            print(f"[PROFILE] has_resume: {profile.get('has_resume')}")
+            print(f"[PROFILE] resume in profile: {'resume' in profile}")
+            if 'resume' in profile:
+                resume_obj = profile['resume']
+                print(f"[PROFILE] Resume object keys: {list(resume_obj.keys()) if isinstance(resume_obj, dict) else 'Not a dict'}")
+                print(f"[PROFILE] Resume skills count: {len(resume_obj.get('skills', [])) if isinstance(resume_obj, dict) else 0}")
+            else:
+                print(f"[PROFILE] ❌❌❌ RESUME STILL NOT IN PROFILE AFTER ALL ATTEMPTS!")
+            print(f"[PROFILE] =============================")
             return profile
         finally:
             db.close()
@@ -1175,68 +1589,121 @@ async def get_user_profile(user_id: str):
         print(f"[PROFILE ERROR] {str(e)}")
         traceback.print_exc()
         # Return a fallback profile for any user on error
+        # BUT STILL TRY TO GET RESUME DATA
         try:
             from auth import users_db, TEST_EMAIL
-            from urllib.parse import unquote
-            email = unquote(user_id).lower().strip()
+            # Try to get email from current_user if available
+            try:
+                email = current_user.email if hasattr(current_user, 'email') else 'unknown'
+                user_id = current_user.id if hasattr(current_user, 'id') else None
+            except:
+                email = 'unknown'
+                user_id = None
+            
+            # Try to get resume data even on error
+            resume_included = False
+            resume_obj = None
+            if user_id:
+                try:
+                    error_db = next(get_db())
+                    try:
+                        error_resume = error_db.query(ResumeData).filter(ResumeData.user_id == user_id).first()
+                        if error_resume:
+                            import json
+                            analysis_data = {}
+                            summary = ""
+                            certifications = []
+                            projects = []
+                            contact_info = {}
+                            try:
+                                if error_resume.raw_text and "|||ANALYSIS|||" in error_resume.raw_text:
+                                    parts = error_resume.raw_text.split("|||ANALYSIS|||")
+                                    if len(parts) > 1:
+                                        metadata = json.loads(parts[1])
+                                        analysis_data = metadata.get("analysis", {})
+                                        summary = metadata.get("summary", "")
+                                        certifications = metadata.get("certifications", [])
+                                        projects = metadata.get("projects", [])
+                                        contact_info = metadata.get("contact_info", {})
+                            except:
+                                pass
+                            
+                            resume_obj = {
+                                "uploaded_at": error_resume.uploaded_at.isoformat() if error_resume.uploaded_at else None,
+                                "skills": error_resume.skills or [],
+                                "experience": error_resume.experience or [],
+                                "education": error_resume.education or [],
+                                "raw_text": error_resume.raw_text or "",
+                                "summary": summary,
+                                "analysis": analysis_data,
+                                "certifications": certifications,
+                                "projects": projects,
+                                "contact_info": contact_info
+                            }
+                            resume_included = True
+                            print(f"[PROFILE ERROR] ✅ Got resume data even in error handler")
+                    finally:
+                        error_db.close()
+                except Exception as resume_error:
+                    print(f"[PROFILE ERROR] Could not get resume in error handler: {resume_error}")
             
             # Check in-memory storage
-            if email in users_db:
+            if email != 'unknown' and email in users_db:
                 user_data = users_db[email]
-                return {
+                fallback_profile = {
                     "status": "success",
                     "email": user_data.get("email", email),
                     "name": user_data.get("name", "User"),
                     "created_at": user_data.get("created_at"),
                     "last_login": user_data.get("last_login"),
-                    "has_resume": user_data.get("has_resume", False),
+                    "has_resume": resume_included or user_data.get("has_resume", False),
                     "is_test": email == TEST_EMAIL
                 }
+                if resume_included and resume_obj:
+                    fallback_profile["resume"] = resume_obj
+                    print(f"[PROFILE ERROR] ✅ Added resume to fallback profile")
+                return fallback_profile
             
             # Default fallback
-            return {
+            fallback_profile = {
                 "status": "success",
                 "email": email,
                 "name": "User",
                 "created_at": None,
                 "last_login": None,
-                "has_resume": False
+                "has_resume": resume_included,
+                "is_test": email == TEST_EMAIL
             }
+            if resume_included and resume_obj:
+                fallback_profile["resume"] = resume_obj
+                print(f"[PROFILE ERROR] ✅ Added resume to default fallback profile")
+            return fallback_profile
         except Exception as fallback_error:
             print(f"[PROFILE FALLBACK ERROR] {str(fallback_error)}")
+            import traceback
+            traceback.print_exc()
             return {
                 "status": "error",
                 "error": str(e)
             }
 
 
-@app.delete("/user/{user_id}/resume")
-async def delete_resume(user_id: str):
-    """Delete user's resume"""
+@app.delete("/user/resume")
+async def delete_resume(current_user: User = Depends(get_current_user)):
+    """Delete authenticated user's resume"""
     try:
-        from urllib.parse import unquote
-        # FastAPI automatically decodes URL-encoded path parameters
-        email = unquote(user_id).lower().strip()
-        print(f"[DELETE RESUME] Received user_id: {user_id}, decoded: {email}")
         db = next(get_db())
         try:
-            user = db.query(User).filter(User.email == email).first()
-            if not user:
-                return {
-                    "status": "error",
-                    "message": "User not found"
-                }
-            
-            resume_data = db.query(ResumeData).filter(ResumeData.user_id == user.id).first()
+            resume_data = db.query(ResumeData).filter(ResumeData.user_id == current_user.id).first()
             if resume_data:
                 db.delete(resume_data)
                 db.commit()
                 
                 # Update auth system
                 from auth import users_db
-                if user.email in users_db:
-                    users_db[user.email]["has_resume"] = False
-                    users_db[user.email].pop("resume_uploaded_at", None)
+                if current_user.email in users_db:
+                    users_db[current_user.email]["has_resume"] = False
+                    users_db[current_user.email].pop("resume_uploaded_at", None)
                 
                 return {
                     "status": "success",
@@ -1314,9 +1781,20 @@ async def get_leaderboard(limit: int = 10):
     return {"leaderboard": leaderboard}
 
 
+@app.get("/user/stats")
+async def get_user_stats(current_user: User = Depends(get_current_user)):
+    """Get authenticated user's statistics and streaks"""
+    db = next(get_db())
+    try:
+        stats = GamificationEngine.get_user_stats(current_user.id, db)
+        return stats
+    finally:
+        db.close()
+
+# Keep old endpoint for backward compatibility (deprecated)
 @app.get("/user/stats/{user_id}")
-async def get_user_stats(user_id: int):
-    """Get user statistics and streaks"""
+async def get_user_stats_by_id(user_id: int):
+    """Get user statistics by ID (deprecated - use /user/stats with authentication)"""
     db = next(get_db())
     try:
         stats = GamificationEngine.get_user_stats(user_id, db)

@@ -18,10 +18,14 @@ import InterviewRounds from './components/InterviewRounds';
 import IntegrityScore from './components/IntegrityScore';
 import ResumeUpload from './components/ResumeUpload';
 import Profile from './components/Profile';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import InterviewWorkspace from './components/InterviewWorkspace';
+import Dashboard from './components/Dashboard';
+import CodeAnalysis from './components/CodeAnalysis';
+import AnalysisPage from './components/AnalysisPage';
+import ModernHeader from './components/ModernHeader';
+import LoginNew from './pages/LoginNew';
+import SignupNew from './pages/SignupNew';
 import speechService from './services/speechService';
-import { t } from './i18n/languages';
 import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -68,6 +72,10 @@ function App() {
   const [hasResume, setHasResume] = useState(null); // null = checking, true/false = known
   const [showResumeUpload, setShowResumeUpload] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'interview', 'workspace', 'analysis'
+  const [showCodeAnalysis, setShowCodeAnalysis] = useState(false);
+  const [analysisCode, setAnalysisCode] = useState('');
+  const [messages, setMessages] = useState([]);
   const wsRef = useRef(null);
   const webcamRef = useRef(null);
   const frameIntervalRef = useRef(null);
@@ -349,8 +357,26 @@ function App() {
 
   // Handle authentication
   const handleLoginSuccess = async (userData) => {
+    console.log('[App] handleLoginSuccess called with userData:', userData);
+    console.log('[App] Token in userData:', userData.token ? userData.token.substring(0, 20) + '...' : 'MISSING');
+    
     setUser(userData);
     setIsAuthenticated(true);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // CRITICAL: Only store actual token, never fallback strings
+    const token = userData.token || localStorage.getItem('auth_token');
+    if (token && token !== 'authenticated' && token !== 'null' && token !== 'undefined' && token.length > 20) {
+      localStorage.setItem('auth_token', token);
+      console.log('[App] ✅ Valid token stored:', token.substring(0, 20) + '...');
+    } else {
+      console.error('[App] ❌ Invalid or missing token!', token);
+      console.error('[App] userData:', userData);
+      // Don't store invalid token - user needs to log in again
+      localStorage.removeItem('auth_token');
+    }
     // Reset CAPTCHA verification when new user logs in
     setCaptchaVerified(false);
     
@@ -360,11 +386,21 @@ function App() {
       setShowResumeUpload(false); // Never show upload page for test accounts
     } else {
       try {
-        const userId = encodeURIComponent(userData.email || userData.id);
-        const response = await axios.get(`${API_URL}/user/${userId}/resume-status`);
-        const hasResumeStatus = response.data.has_resume || false;
-        setHasResume(hasResumeStatus);
-        setShowResumeUpload(!hasResumeStatus); // Show upload if no resume
+        const token = userData.token || localStorage.getItem('auth_token');
+        // Validate token - reject placeholder strings
+        if (token && token !== 'authenticated' && token !== 'null' && token !== 'undefined') {
+          const response = await axios.get(`${API_URL}/user/resume-status`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          const hasResumeStatus = response.data.has_resume || false;
+          setHasResume(hasResumeStatus);
+          setShowResumeUpload(!hasResumeStatus); // Show upload if no resume
+        } else {
+          setHasResume(false);
+          setShowResumeUpload(true);
+        }
       } catch (error) {
         console.error('Error checking resume status:', error);
         // Default to showing upload if check fails
@@ -375,8 +411,26 @@ function App() {
   };
 
   const handleSignupSuccess = async (userData) => {
+    console.log('[App] handleSignupSuccess called with userData:', userData);
+    console.log('[App] Token in userData:', userData.token ? userData.token.substring(0, 20) + '...' : 'MISSING');
+    
     setUser(userData);
     setIsAuthenticated(true);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // CRITICAL: Only store actual token, never fallback strings
+    const token = userData.token || localStorage.getItem('auth_token');
+    if (token && token !== 'authenticated' && token !== 'null' && token !== 'undefined' && token.length > 20) {
+      localStorage.setItem('auth_token', token);
+      console.log('[App] ✅ Valid token stored:', token.substring(0, 20) + '...');
+    } else {
+      console.error('[App] ❌ Invalid or missing token!', token);
+      console.error('[App] userData:', userData);
+      // Don't store invalid token - user needs to sign up again
+      localStorage.removeItem('auth_token');
+    }
     // Reset CAPTCHA verification when new user signs up
     setCaptchaVerified(false);
     
@@ -388,13 +442,23 @@ function App() {
       // Check resume status from userData or make API call
       const hasResumeStatus = userData.has_resume || false;
       if (!hasResumeStatus) {
-        // Double-check with API
+        // Double-check with API using authentication token
         try {
-          const userId = encodeURIComponent(userData.email || userData.id);
-          const response = await axios.get(`${API_URL}/user/${userId}/resume-status`);
-          const apiHasResume = response.data.has_resume || false;
-          setHasResume(apiHasResume);
-          setShowResumeUpload(!apiHasResume);
+          const token = localStorage.getItem('auth_token');
+          // Validate token - reject placeholder strings
+          if (token && token !== 'authenticated' && token !== 'null' && token !== 'undefined') {
+            const response = await axios.get(`${API_URL}/user/resume-status`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+            const apiHasResume = response.data.has_resume || false;
+            setHasResume(apiHasResume);
+            setShowResumeUpload(!apiHasResume);
+          } else {
+            setHasResume(false);
+            setShowResumeUpload(true);
+          }
         } catch (error) {
           console.error('Error checking resume status:', error);
           setHasResume(false);
@@ -439,17 +503,102 @@ function App() {
     setIsInterviewerSpeaking(speaking);
   };
 
+  // Handlers for new workspace
+  const handleSendMessage = async (message) => {
+    // Add user message to chat
+    setMessages(prev => [...prev, { sender: 'user', text: message }]);
+    
+    try {
+      const response = await axios.post(`${API_URL}/chat`, { message });
+      const aiMessage = response.data.reply;
+      
+      // Add AI message to chat
+      setMessages(prev => [...prev, { sender: 'ai', text: aiMessage }]);
+      
+      // Handle coding question detection
+      if (response.data.is_coding_question) {
+        setCurrentCodingQuestion(aiMessage);
+        setSuggestedLanguage(response.data.suggested_language || 'javascript');
+      }
+      
+      // Speak the AI response
+      if (!isInterviewerMuted) {
+        speechService.speak(aiMessage);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' }]);
+    }
+  };
+
+  const handleRunCode = async (code, language) => {
+    try {
+      const response = await axios.post(`${API_URL}/run_code`, { code, language });
+      return { output: response.data.output, error: response.data.error };
+    } catch (error) {
+      console.error('Error running code:', error);
+      return { error: error.message };
+    }
+  };
+
+  const handleSubmitCode = async (code, language, question) => {
+    const questionText = question || currentCodingQuestion || 'Two Sum problem';
+    try {
+      const response = await axios.post(`${API_URL}/evaluate_code`, {
+        code,
+        language,
+        question: questionText
+      });
+      
+      // Store submitted code for analysis page
+      localStorage.setItem('lastCodeSubmission', JSON.stringify({
+        code: code,
+        language: language,
+        question: questionText,
+        timestamp: Date.now()
+      }));
+      
+      return {
+        feedback: response.data.feedback,
+        score: response.data.score,
+        is_correct: response.data.is_correct
+      };
+    } catch (error) {
+      console.error('Error submitting code:', error);
+      return { feedback: error.message };
+    }
+  };
+
+  const handleEndInterview = () => {
+    if (window.confirm('Are you sure you want to end the interview?')) {
+      handleLogout();
+    }
+  };
+
+  const handleNavigate = (view) => {
+    setCurrentView(view);
+  };
+
+  const handleStartInterview = () => {
+    setCurrentView('interview');
+  };
+
+  const handleShowCodeAnalysis = (code) => {
+    setAnalysisCode(code);
+    setShowCodeAnalysis(true);
+  };
+
   // Show authentication if not logged in
   if (!isAuthenticated) {
     return (
       <>
         {authView === 'login' ? (
-          <Login 
+          <LoginNew 
             onLoginSuccess={handleLoginSuccess}
             onSwitchToSignup={() => setAuthView('signup')}
           />
         ) : (
-          <Signup 
+          <SignupNew 
             onSignupSuccess={handleSignupSuccess}
             onSwitchToLogin={() => setAuthView('login')}
           />
@@ -458,44 +607,64 @@ function App() {
     );
   }
 
-  // Show CAPTCHA if authenticated but not verified
+  // Show CAPTCHA if authenticated but not verified - Auto-verify for new design
   if (isAuthenticated && !captchaVerified) {
-    return <Captcha onVerify={handleCaptchaVerify} />;
+    // Auto-verify immediately
+    setTimeout(() => setCaptchaVerified(true), 0);
   }
 
-  // Show resume upload if user doesn't have resume (test accounts skip this - they can add resume in profile)
-  if (isAuthenticated && showResumeUpload && hasResume === false && !user?.is_test) {
+  // Show resume upload when button is clicked
+  if (isAuthenticated && showResumeUpload) {
     return (
-      <div className="app">
-        <div className="topbar">
-          <div className="topbar__inner">
-            <div className="logo">
-              <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo__img" />
-              <div className="logo__text">
-                <span className="logo__name">{t('app.title')}</span>
-                <span className="logo__tagline">{t('app.tagline')}</span>
-              </div>
-            </div>
-            {user && (
-              <div className="user-info">
-                <button 
-                  onClick={() => setShowProfile(!showProfile)} 
-                  className="btn btn--ghost btn--sm"
-                  title="View Profile"
-                >
-                  👤 Profile
-                </button>
-                <span>{user.name || user.email}</span>
-                <button onClick={handleLogout} className="btn btn--ghost btn--sm">{t('app.logout')}</button>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="app modern-app">
+        <ModernHeader
+          user={user}
+          onUploadResume={() => setShowResumeUpload(true)}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          currentView={currentView}
+          onShowProfile={() => setShowProfile(true)}
+        />
         <ResumeUpload
           apiUrl={API_URL}
           userId={user?.email || user?.id || 'user'}
           onUploadSuccess={(data) => {
-            setHasResume(true);
+            try {
+              console.log('[App] Resume upload success, data:', data);
+              console.log('[App] Resume data received:', {
+                skills: data.skills?.length || 0,
+                experience: data.experience?.length || 0,
+                education: data.education?.length || 0,
+                hasSummary: !!data.summary,
+                hasAnalysis: !!data.analysis
+              });
+              setHasResume(true);
+              setShowResumeUpload(false);
+              // Ensure we stay authenticated
+              if (!isAuthenticated && user) {
+                setIsAuthenticated(true);
+              }
+              // Force dashboard refresh by updating refreshTrigger
+              // The Dashboard component will reload data when refreshTrigger changes
+              if (currentView === 'dashboard') {
+                // Trigger refresh by toggling hasResume (Dashboard watches this)
+                // Add a delay to ensure database commit is complete
+                setTimeout(() => {
+                  console.log('[App] Triggering dashboard refresh...');
+                  setHasResume(true); // This will trigger Dashboard refresh
+                  // Also force a manual refresh by changing the refresh trigger
+                  setCurrentView('dashboard'); // This will cause Dashboard to remount/reload
+                }, 500);
+              } else {
+                // If not on dashboard, navigate to it
+                setCurrentView('dashboard');
+                setHasResume(true);
+              }
+            } catch (error) {
+              console.error('Error in resume upload success handler:', error);
+            }
+          }}
+          onCancel={() => {
             setShowResumeUpload(false);
           }}
         />
@@ -503,129 +672,148 @@ function App() {
     );
   }
 
-  return (
-    <div className="app">
-      {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
-      
-
-      {/* Top Header */}
-      <div className="topbar">
-        <div className="topbar__inner">
-          <div className="logo">
-            <img src="/aptiva-logo.svg" alt="Aptiva Logo" className="logo__img" />
-            <div className="logo__text">
-              <span className="logo__name">{t('app.title')}</span>
-              <span className="logo__tagline">{t('app.tagline')}</span>
-            </div>
-          </div>
-          <div className="spacer"></div>
-          <div className="status-indicators">
-            <LanguageSelector onLanguageChange={(lang) => {
-              // Language change handled by reload in LanguageSelector
-            }} />
-            {/* Alerts Toggle Switch */}
-            <div className="alerts-toggle-container">
-              <label className="alerts-toggle-label">
-                <span>
-                  {alertsEnabled ? '🔔' : '🔕'} {alertsEnabled ? 'Alerts ON' : 'Alerts OFF'}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={alertsEnabled}
-                  onChange={(e) => setAlertsEnabled(e.target.checked)}
-                  className="alerts-toggle-switch"
-                />
-              </label>
-            </div>
-            <div className={`status-indicator ${wsConnected ? 'connected' : 'disconnected'}`}>
-              <span className="status-dot"></span>
-              {wsConnected ? t('app.proctoringActive') : t('app.proctoringOffline')}
-            </div>
-            {user && (
-              <div className="user-info">
-                <button 
-                  onClick={() => setShowProfile(!showProfile)} 
-                  className="btn btn--ghost btn--sm"
-                  title="View Profile"
-                >
-                  👤 Profile
-                </button>
-                <span>{user.name || user.email}</span>
-                <button onClick={handleLogout} className="btn btn--ghost btn--sm">{t('app.logout')}</button>
-              </div>
-            )}
-          </div>
-        </div>
+  // Dashboard View
+  if (currentView === 'dashboard') {
+    return (
+      <div className="app modern-app">
+        {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
+        
+        <ModernHeader
+          user={user}
+          onUploadResume={() => setShowResumeUpload(true)}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          currentView={currentView}
+        />
+        
+        <Dashboard
+          user={user}
+          apiUrl={API_URL}
+          onStartInterview={handleStartInterview}
+          onUploadResume={() => setShowResumeUpload(true)}
+          refreshTrigger={hasResume}
+        />
       </div>
+    );
+  }
+  
+  // Analysis View
+  if (currentView === 'analysis') {
+    return (
+      <div className="app modern-app">
+        {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
+        
+        <ModernHeader
+          user={user}
+          onUploadResume={() => setShowResumeUpload(true)}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          currentView="analysis"
+          onShowProfile={() => setShowProfile(true)}
+        />
+        
+        <AnalysisPage
+          user={user}
+          apiUrl={API_URL}
+          sessionId={sessionId}
+        />
+      </div>
+    );
+  }
 
-      <div className="app-container">
-        {/* LEFT PANEL: Interviewer Avatar, Candidate Video & Analytics */}
-        <div className="left-panel">
-          {/* Personality Selector */}
-          {sessionId && (
-            <PersonalitySelector
-              apiUrl={API_URL}
-              onPersonalityChange={setSelectedPersonality}
-            />
-          )}
+  // Interview/Workspace View
+  if (currentView === 'interview' || currentView === 'workspace') {
+    return (
+      <div className="app">
+        {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
+        
+        <ModernHeader
+          user={user}
+          onUploadResume={() => setShowResumeUpload(true)}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          currentView="interview"
+          onShowProfile={() => setShowProfile(true)}
+        />
 
-          {/* Interview Rounds */}
-          {sessionId && (
-            <>
-              <InterviewRounds
-                apiUrl={API_URL}
-                userId={user?.email || user?.id || 'user'}
-                onRoundChange={setCurrentRound}
-              />
-              
-              {/* Analytics Toggle - Right after Interview Rounds */}
-              <div className="analytics-toggle">
-                <button
-                  className="btn btn--primary btn--sm"
-                  onClick={() => setShowAnalytics(!showAnalytics)}
-                >
-                  {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Video section removed - now floating */}
-
-          {/* Analytics Panel */}
-          {showAnalytics && sessionId && (
-            <div className="analytics-panel">
-              <SkillHeatmap
-                apiUrl={API_URL}
-                userId={user?.email || user?.id || 'user'}
-              />
-              <IntegrityScore
-                apiUrl={API_URL}
-                userId={user?.email || user?.id || 'user'}
-              />
-              <ProctoringDashboard
-                apiUrl={API_URL}
-                userId={user?.email || user?.id || 'user'}
-              />
-              <CommunicationMetrics
-                apiUrl={API_URL}
-                userId={user?.email || user?.id || 'user'}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT PANEL: Profile, Code Editor or Career Blueprint */}
-        {showProfile ? (
-          <div className="right-panel">
-            <Profile
-              apiUrl={API_URL}
-              userId={user?.email || user?.id || 'user'}
-              onResumeChange={() => {
-                // Refresh resume status when resume is changed
-                if (user && !user.is_test) {
-                  const userId = encodeURIComponent(user.email || user.id);
-                  axios.get(`${API_URL}/user/${userId}/resume-status`)
+        <InterviewWorkspace
+          user={user}
+          sessionId={sessionId}
+          currentQuestion={currentCodingQuestion}
+          onSendMessage={handleSendMessage}
+          messages={messages}
+          onRunCode={handleRunCode}
+          onSubmitCode={handleSubmitCode}
+          onEndInterview={() => setCurrentView('dashboard')}
+          webcamRef={webcamRef}
+          isInterviewerSpeaking={isInterviewerSpeaking}
+          currentSpeechText={currentSpeechText}
+        />
+      </div>
+    );
+  }
+  
+  // Show Code Analysis overlay
+  if (showCodeAnalysis) {
+    return (
+      <>
+        <CodeAnalysis
+          userCode={analysisCode}
+          question={currentCodingQuestion}
+          language={suggestedLanguage}
+          apiUrl={API_URL}
+          onClose={() => setShowCodeAnalysis(false)}
+        />
+      </>
+    );
+  }
+  
+  // Show Profile
+  if (showProfile) {
+    return (
+      <div className="app modern-app">
+        {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
+        
+        <ModernHeader
+          user={user}
+          onUploadResume={() => setShowResumeUpload(true)}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          currentView={currentView}
+          onShowProfile={() => setShowProfile(true)}
+        />
+        
+        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>Profile</h1>
+            <button
+              onClick={() => setShowProfile(false)}
+              style={{
+                padding: '0.5rem 1rem',
+                background: '#6b7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: 600
+              }}
+            >
+              Close
+            </button>
+          </div>
+          <Profile
+            apiUrl={API_URL}
+            userId={user?.email || user?.id || 'user'}
+            onResumeChange={() => {
+              if (user && !user.is_test) {
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                  axios.get(`${API_URL}/user/resume-status`, {
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                    },
+                  })
                     .then(response => {
                       setHasResume(response.data.has_resume || false);
                     })
@@ -633,146 +821,36 @@ function App() {
                       console.error('Error checking resume status:', error);
                     });
                 }
-              }}
-            />
-          </div>
-        ) : currentCodingQuestion ? (
-          <div className="right-panel">
-            <CodeEditor 
-              apiUrl={API_URL} 
-              onViolation={handleCodeViolation}
-              question={currentCodingQuestion}
-              suggestedLanguage={suggestedLanguage}
-              userId={user?.email || user?.id || 'user'}
-              onCodeChange={(code) => {
-                // Store code for revision
-                if (sessionId) {
-                  // Code revision will be triggered manually
-                }
-              }}
-            />
-          </div>
-        ) : (
-          <div className="right-panel right-panel--empty">
-            {sessionId ? (
-              <div className="right-panel-content">
-                <div className="empty-state">
-                  <div className="empty-state__icon">💻</div>
-                  <h3 className="empty-state__title">Code Editor</h3>
-                  <p className="empty-state__text">
-                    Code Editor will appear here when a coding question is asked
-                  </p>
-                  <p className="empty-state__subtext">
-                    Start chatting with the interviewer to begin!
-                  </p>
-                </div>
-                <CareerBlueprint
-                  apiUrl={API_URL}
-                  userId={user?.email || user?.id || 'user'}
-                />
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-state__icon">💻</div>
-                <h3 className="empty-state__title">Code Editor</h3>
-                <p className="empty-state__text">
-                  Code Editor will appear here when a coding question is asked
-                </p>
-                <p className="empty-state__subtext">
-                  Start chatting with the interviewer to begin!
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Floating Video Feed in Left Corner */}
-      <div className={`floating-video ${isVideoMinimized ? 'floating-video--min' : ''}`}>
-        <div className="floating-video__panel">
-          <div className="floating-video__header">
-            <div className="floating-video__title">📹 {t('app.candidateVideo', 'Your Video')}</div>
-            <button
-              onClick={() => setIsVideoMinimized(!isVideoMinimized)}
-              className="floating-video__minimize"
-              title={isVideoMinimized ? 'Maximize video' : 'Minimize video'}
-            >
-              {isVideoMinimized ? '⬆️' : '⬇️'}
-            </button>
-          </div>
-          {!isVideoMinimized && (
-            <div className="floating-video__content">
-              <VideoFeed 
-                onAlerts={setAlerts} 
-                wsConnected={wsConnected}
-                ref={webcamRef}
-              />
-            </div>
-          )}
+              }
+            }}
+          />
         </div>
       </div>
+    );
+  }
 
-      {/* Floating Chatbox with Avatar in Right Corner */}
-      <div className={`float-chat chat ${isChatMinimized ? 'chat--min' : ''}`}>
-        <div className="chat__panel">
-          <div className="chat__header">
-            <div className="chat__title">💬 Interview Chat</div>
-            <div className="chat__header-actions">
-              <button
-                onClick={() => {
-                  setIsInterviewerMuted(!isInterviewerMuted);
-                  // Stop any current speech when muting
-                  if (!isInterviewerMuted) {
-                    speechService.stopSpeaking();
-                  }
-                }}
-                className={`chat__mute-btn ${isInterviewerMuted ? 'muted' : ''}`}
-                title={isInterviewerMuted ? 'Unmute interviewer' : 'Mute interviewer'}
-              >
-                {isInterviewerMuted ? '🔇' : '🔊'}
-              </button>
-              <button
-                onClick={() => setIsChatMinimized(!isChatMinimized)}
-                className="chat__minimize"
-                title={isChatMinimized ? 'Maximize chat' : 'Minimize chat'}
-              >
-                {isChatMinimized ? '⬆️' : '⬇️'}
-              </button>
-            </div>
-          </div>
-          {!isChatMinimized && (
-            <>
-              {/* Interviewer Avatar Above Chat */}
-              <div className="chat__avatar-section">
-                <InterviewerAvatar 
-                  isSpeaking={isInterviewerSpeaking}
-                  interviewerName="AI Interviewer"
-                  currentSpeech={currentSpeechText}
-                  apiUrl={API_URL}
-                  onAvatarReady={setAvatarReady}
-                />
-              </div>
-              {/* Chat Interface Below Avatar */}
-              <ChatInterface 
-                apiUrl={API_URL} 
-                onInterviewerMessage={handleInterviewerMessage}
-                onSpeakingStateChange={handleSpeakingStateChange}
-                onSpeechTextChange={setCurrentSpeechText}
-                onCodingQuestion={(question, language) => {
-                  setCurrentCodingQuestion(question);
-                  setSuggestedLanguage(language);
-                }}
-                isMuted={isInterviewerMuted}
-                userId={user?.email || null}
-                avatarReady={avatarReady}
-              />
-            </>
-          )}
-        </div>
-      </div>
+  // Default to dashboard if nothing else matches
+  return (
+    <div className="app modern-app">
+      {alertsEnabled && <AlertFlash alerts={flashAlerts} onDismiss={handleAlertDismiss} />}
+      
+      <ModernHeader
+        user={user}
+        onUploadResume={() => setShowResumeUpload(true)}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
+        currentView={currentView}
+        onShowProfile={() => setShowProfile(true)}
+      />
+      
+      <Dashboard
+        user={user}
+        apiUrl={API_URL}
+        onStartInterview={handleStartInterview}
+        onUploadResume={() => setShowResumeUpload(true)}
+      />
     </div>
   );
 }
 
 export default App;
-

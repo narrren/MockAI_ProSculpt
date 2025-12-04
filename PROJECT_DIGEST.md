@@ -117,7 +117,10 @@ Aptiva/
 │   ├── requirements.txt              # Python dependencies
 │   ├── start_backend.bat             # Windows startup script
 │   ├── start_backend.sh              # Linux/Mac startup script
-│   └── .env                          # Environment variables (API keys, email config)
+│   ├── update_env.py                 # Safe .env update script
+│   ├── update_env.ps1                # PowerShell wrapper for update_env.py
+│   ├── .env                          # Environment variables (API keys, email config)
+│   └── .env.example                  # Template file for environment variables
 │
 ├── frontend/                         # React frontend application
 │   ├── node_modules/                 # NPM dependencies
@@ -148,8 +151,10 @@ Aptiva/
 │   │   │   └── languages.js          # Translation dictionary
 │   │   ├── pages/                    # Page components
 │   │   │   ├── Auth.css              # Auth page styles
-│   │   │   ├── Login.js               # Login page
-│   │   │   └── Signup.js              # Signup page
+│   │   │   ├── Login.js               # Login page (legacy)
+│   │   │   ├── LoginNew.js            # New login page with improved token handling
+│   │   │   ├── Signup.js              # Signup page (legacy)
+│   │   │   └── SignupNew.js           # New signup page with improved token handling
 │   │   ├── services/                 # Service modules
 │   │   │   └── speechService.js       # Web Speech API wrapper
 │   │   ├── App.js                    # Main application component
@@ -271,11 +276,21 @@ pdfminer.six>=20221105        # PDF text extraction
 - **Key Features**:
   - Email OTP generation and verification
   - User registration and login
-  - SMTP email sending
+  - SMTP email sending with retry logic
   - Test credentials bypass
-  - Session token management
-- **Storage**: In-memory dictionaries (MVP)
+  - Session token management with persistence
+  - Token storage mapping (token → email)
+  - User data loading from database
+  - Resume status checking
+  - Email configuration validation
+  - OTP always printed to console as fallback
+- **Storage**: In-memory dictionaries + Database (SQLAlchemy)
 - **OTP**: 6-digit numeric, 10-minute expiry, 3 attempt limit
+- **Email Reliability**: 
+  - Retry mechanism (3 attempts with exponential backoff: 2s, 4s, 6s)
+  - 30-second timeout
+  - Detailed error logging
+  - Always includes OTP in response
 
 #### 4. `proctoring.py` - Proctoring System
 - **Purpose**: Real-time face detection and violation monitoring
@@ -325,10 +340,13 @@ pdfminer.six>=20221105        # PDF text extraction
 - **Key Features**:
   - Communication analysis (filler words, clarity, STAR format)
   - Skill score calculation
-  - Career blueprint generation
+  - Career blueprint generation (now based on resume data)
   - Proctoring behavior analysis
   - Response time analysis
   - Job role compatibility scoring
+  - Career level determination from resume
+  - Skill gap identification from resume
+  - Experience-based time estimates
 
 #### 8. `personalities.py` - Personality System
 - **Purpose**: Different interviewer styles for varied experiences
@@ -438,6 +456,38 @@ pdfminer.six>=20221105        # PDF text extraction
 - **Purpose**: Language selection dropdown
 - **Features**: Multi-language support (EN, ES, FR, HI)
 
+#### 8. `Dashboard.js`
+- **Purpose**: User dashboard with statistics and resume summary
+- **Features**:
+  - User statistics display (global rank, interviews completed, integrity score)
+  - Resume summary display (skills, experience, education, summary, analysis)
+  - Career blueprint integration
+  - Resume data loading with retry mechanism
+  - Authentication token-based API calls
+  - Profile refresh triggering
+  - Comprehensive error handling and logging
+
+#### 9. `Profile.js`
+- **Purpose**: User profile and resume management
+- **Features**:
+  - Profile information display
+  - Resume upload interface
+  - Resume deletion functionality
+  - Resume viewing
+  - Authentication token-based API calls
+  - Profile data refresh
+
+#### 10. `ResumeUpload.js`
+- **Purpose**: Resume upload component
+- **Features**:
+  - PDF file upload
+  - Client-side file validation (type, size)
+  - Authentication token handling
+  - Upload progress indication
+  - Success/error handling
+  - Detailed error messages
+  - Token validation before upload
+
 ### Pages
 
 #### 1. `Login.js`
@@ -520,10 +570,12 @@ pdfminer.six>=20221105        # PDF text extraction
 
 | Method | Endpoint | Description | Request Body | Response |
 |--------|----------|-------------|--------------|----------|
-| POST | `/resume/upload` | Upload and parse resume PDF | `file: PDF, user_id` | `{skills, experience, education, generated_questions, analysis}` |
-| GET | `/user/{user_id}/profile` | Get user profile and resume | - | `{name, email, has_resume, resume?}` |
-| GET | `/user/{user_id}/resume-status` | Check if user has resume | - | `{has_resume: bool}` |
-| DELETE | `/user/{user_id}/resume` | Delete user's resume | - | `{status, message}` |
+| POST | `/resume/upload` | Upload and parse resume PDF (authenticated) | `file: PDF` (token in header) | `{status, skills, experience, education, summary, analysis, certifications, projects, contact_info, generated_questions}` |
+| GET | `/user/profile` | Get authenticated user's profile and resume | - (token in header) | `{status, email, name, has_resume, resume?, is_test}` |
+| GET | `/user/resume-status` | Check if authenticated user has resume | - (token in header) | `{has_resume, uploaded_at?, skills_count?}` |
+| DELETE | `/user/resume` | Delete authenticated user's resume | - (token in header) | `{status, message}` |
+| GET | `/user/career-blueprint` | Get career blueprint based on resume (authenticated) | - (token in header) | `{career_level, skill_gaps, estimated_time_to_senior, estimated_time_to_staff, progress_percentage, interviews_completed, has_resume}` |
+| GET | `/user/stats` | Get authenticated user statistics | - (token in header) | `{global_rank, total_interviews, avg_integrity_score}` |
 | POST | `/api/heygen/token` | Get HeyGen session token | - | `{token}` |
 | POST | `/api/heygen/start` | Start HeyGen streaming session | `{avatar_id?}` | `{session_id, sdp_answer}` |
 | POST | `/api/heygen/stop` | Stop HeyGen session | `{session_id}` | `{status}` |
@@ -536,7 +588,8 @@ pdfminer.six>=20221105        # PDF text extraction
 | POST | `/multi-file/update/{session_id}` | Update file in project | `file_path, content` | `{status, message}` |
 | POST | `/realtime-feedback/check/{session_id}` | Real-time code feedback | `{code, question}` | `{has_issue, feedback, severity?}` |
 | GET | `/leaderboard` | Get global leaderboard | `limit?` | `{leaderboard: [...]}` |
-| GET | `/user/stats/{user_id}` | Get user statistics | - | `{current_streak, longest_streak, total_interviews, best_score}` |
+| GET | `/user/stats` | Get authenticated user statistics | - (token in header) | `{global_rank, total_interviews, avg_integrity_score}` |
+| GET | `/user/stats/{user_id}` | Get user statistics by ID (deprecated) | - | `{current_streak, longest_streak, total_interviews, best_score}` |
 | POST | `/session/{session_id}/complete` | Complete session | `user_id` | `{status, scores}` |
 
 ### Utility Endpoints
@@ -557,11 +610,20 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Login with OTP verification
 - ✅ Test credentials bypass (for testing)
 - ✅ Test account question limiting (3 questions max)
-- ✅ Session token management
+- ✅ Session token management with persistence
+- ✅ Token-based authentication (Bearer tokens)
+- ✅ User authentication persistence across sessions
+- ✅ localStorage token storage
+- ✅ Token validation and format checking
 - ✅ CAPTCHA verification (human check)
 - ✅ Always require login on page refresh
 - ✅ URL encoding for user IDs in API calls
 - ✅ Backend proxy endpoints for secure API key usage
+- ✅ HTTPBearer authentication dependency
+- ✅ Optional authentication for flexible error handling
+- ✅ Enhanced authentication logging and debugging
+- ✅ User data persistence in database
+- ✅ Resume status tracking per user
 
 ### 2. AI Interviewer
 - ✅ Google Gemini 2.5 Flash integration
@@ -604,13 +666,18 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Enterprise-friendly color system
 - ✅ CSS design tokens (spacing, typography, colors)
 - ✅ Responsive layout with 8px grid system
-- ✅ Dark mode only (professional appearance)
+- ✅ Dark mode only (professional appearance - light mode removed)
 - ✅ Floating chatbox with minimize/maximize
 - ✅ Floating video feed
 - ✅ Flash alerts (non-blocking, auto-dismiss after 5 seconds)
 - ✅ Realistic HeyGen video avatar with lip-sync
 - ✅ Compact, professional component styling
 - ✅ Timeline-based interview rounds display
+- ✅ Dashboard with user statistics and resume summary
+- ✅ Profile management interface
+- ✅ Resume upload interface
+- ✅ Career blueprint visualization
+- ✅ ResizeObserver error suppression (harmless browser quirk)
 
 ### 6. Speech Features
 - ✅ Text-to-speech (AI responses)
@@ -620,12 +687,19 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Speaking animations
 - ✅ Subtitle display
 
-### 7. Premium Features (NEW)
+### 7. Premium Features
 - ✅ **AI Interview Blueprint**: Dynamic career path generator
   - Strengths/weaknesses analysis
   - Recommended courses with timelines
   - Job role compatibility scoring
   - Estimated improvement timeline
+  - **Resume-Based Career Blueprint**:
+    - Career level determination from resume analysis
+    - Years of experience calculation from resume
+    - Skill gap identification based on actual resume skills
+    - Personalized time estimates (Entry Level, Junior, Mid-Level, Senior)
+    - Career-level-based skill gap detection
+    - Progress tracking based on interviews completed
 - ✅ **Personality Simulation Mode**: 2 interviewer styles
   - Professional (default) - Comprehensive, structured interviews
   - Rapid-Fire - Fast-paced, competitive style
@@ -681,26 +755,40 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Language selector
 - ✅ Centralized translations
 
-### 8. Email System
+### 8. Email System & Reliability
 - ✅ SMTP email sending (Gmail App Password support)
 - ✅ HTML email templates
-- ✅ OTP delivery
-- ✅ Configurable email providers
-- ✅ Console fallback (if email not configured)
+- ✅ OTP delivery with retry logic
+- ✅ Configurable email providers (Gmail, Outlook, etc.)
+- ✅ Console fallback (OTP always printed to console)
 - ✅ Dynamic .env reloading for email configuration
+- ✅ Email configuration validation on startup
+- ✅ Retry mechanism with exponential backoff (3 attempts: 2s, 4s, 6s delays)
+- ✅ 30-second timeout for SMTP connections
+- ✅ Detailed error logging for SMTP issues
+- ✅ Always includes OTP in API response as fallback
+- ✅ Email reliability improvements
 
-### 9. Resume Management
-- ✅ PDF resume upload
-- ✅ AI-powered resume parsing
-- ✅ Skill extraction
+### 9. Resume Management & User Persistence
+- ✅ PDF resume upload with authentication
+- ✅ AI-powered resume parsing (comprehensive analysis)
+- ✅ Skill extraction from resume
 - ✅ Experience and education extraction
 - ✅ Certifications and projects extraction
 - ✅ Contact information extraction
-- ✅ Career level analysis
+- ✅ Career level analysis (years of experience, career level)
+- ✅ Resume summary generation
+- ✅ Comprehensive resume analysis metadata storage
 - ✅ Resume viewing modal
 - ✅ Profile section with resume management
-- ✅ Resume persistence across logins
-- ✅ Test user bypass (no resume required)
+- ✅ Resume persistence across logins (per-user storage)
+- ✅ User-specific resume storage (no mixing between users)
+- ✅ Resume deletion functionality
+- ✅ Resume status checking endpoint
+- ✅ Test user resume support
+- ✅ Database persistence (SQLAlchemy models)
+- ✅ Resume data retrieval with comprehensive error handling
+- ✅ Multiple safeguards to ensure resume data is always included in profile responses
 
 ### 10. Avatar System
 - ✅ HeyGen video streaming integration
@@ -712,6 +800,10 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Landscape video display
 - ✅ Professional avatar appearance
 - ✅ Speech queueing to prevent overlap
+- ✅ Backend proxy endpoints for secure API key usage
+- ✅ Concurrent session limit handling
+- ✅ Session stop-all functionality
+- ✅ Proper avatar aspect ratio and positioning
 
 ---
 
@@ -746,6 +838,25 @@ EMAIL_PASSWORD=your-app-password
 - Backend: `8000` (configurable in `uvicorn` command)
 - Frontend: `3000` (configurable via `PORT` env var or `package.json`)
 
+### Environment Variable Management
+
+**`.env` File Management**:
+- Safe `.env` update script (`backend/update_env.py`)
+- PowerShell wrapper (`backend/update_env.ps1`)
+- Prevents accidental loss of API keys and passwords
+- Creates backups before updates
+- Interactive interface for updating variables
+- Template file (`backend/.env.example`) for reference
+
+**Key Environment Variables** (DO NOT include actual values in documentation):
+- `GOOGLE_API_KEY`: Google Gemini API key
+- `HEYGEN_API_KEY`: HeyGen API key for video avatar
+- `EMAIL_FROM`: Email address for sending OTPs
+- `EMAIL_PASSWORD`: App password for email (Gmail App Password)
+- `SMTP_SERVER`: SMTP server address (e.g., smtp.gmail.com)
+- `SMTP_PORT`: SMTP port (e.g., 587)
+- `ENABLE_EMAIL`: Enable/disable email sending (true/false)
+
 ### Test Credentials
 
 - **Email**: `test@aptiva.ai`
@@ -758,12 +869,20 @@ EMAIL_PASSWORD=your-app-password
 
 ### Backend Files
 
-#### `main.py` (333 lines)
+#### `main.py` (~2,100+ lines)
 - FastAPI application
-- All API endpoints
+- All API endpoints (40+ endpoints)
 - WebSocket handler
 - Request/response models
 - CORS configuration
+- Authentication dependency (`get_current_user`)
+- Resume upload and management endpoints
+- Profile endpoints with comprehensive error handling
+- Career blueprint endpoint based on resume analysis
+- HeyGen API proxy endpoints
+- User statistics endpoints
+- Comprehensive logging and debugging
+- Multiple safeguards for data integrity
 
 #### `ai_interviewer.py` (~200 lines)
 - Google Gemini integration
@@ -787,17 +906,30 @@ EMAIL_PASSWORD=your-app-password
 - Startup grace period
 - False positive prevention
 
-#### `database.py` (~150 lines)
+#### `database.py` (~200 lines)
 - SQLAlchemy models
 - PostgreSQL/SQLite support
-- User, Session, CodeAttempt models
-- ResumeData, Leaderboard models
+- User model (with created_at, last_login, email, name)
+- InterviewSession (DBSession) model
+- CodeAttempt model
+- ResumeData model (with skills, experience, education, raw_text, analysis, summary, certifications, projects, contact_info)
+- Leaderboard model
+- UserStreak model
+- Database initialization and connection management
 
-#### `resume_parser.py` (~120 lines)
+#### `resume_parser.py` (~200+ lines)
 - PDF parsing (pypdf + pdfminer)
 - Skill extraction
 - Experience extraction
-- Question generation
+- Education extraction
+- Certifications extraction
+- Projects extraction
+- Contact information extraction
+- Career level analysis
+- Years of experience calculation
+- Resume summary generation
+- Interview question generation based on resume
+- Comprehensive analysis metadata generation
 
 #### `system_design.py` (~80 lines)
 - Gemini Vision integration
@@ -827,12 +959,18 @@ EMAIL_PASSWORD=your-app-password
 
 ### Frontend Files
 
-#### `App.js` (~400 lines)
+#### `App.js` (~850+ lines)
 - Main application component
-- State management
+- State management (authentication, user data, resume status, etc.)
 - Routing logic
 - WebSocket connection
 - Event handlers
+- Token management and validation
+- Resume upload success handling
+- Dashboard refresh triggering
+- User persistence with localStorage
+- Resume status checking
+- Test user handling
 
 #### `ChatInterface.js` (~500 lines)
 - Chat UI
@@ -846,15 +984,20 @@ EMAIL_PASSWORD=your-app-password
 - Code evaluation
 - Proctoring violations
 
-#### `Login.js` (~280 lines)
+#### `Login.js` / `LoginNew.js` (~300+ lines)
 - Login page
 - OTP verification
 - Error handling
+- Token storage and management
+- Test account login support
+- Token validation before storing
 
-#### `Signup.js` (~250 lines)
+#### `Signup.js` / `SignupNew.js` (~300+ lines)
 - Registration page
 - OTP verification
 - Error handling
+- Token storage and management
+- Token validation before storing
 
 #### `Captcha.js` (~120 lines)
 - CAPTCHA component
@@ -960,15 +1103,18 @@ EMAIL_PASSWORD=your-app-password
 
 ## 📊 Statistics
 
-- **Total Files**: ~60+ files
-- **Backend Lines**: ~2,000+ lines
-- **Frontend Lines**: ~4,000+ lines
-- **Components**: 15+ React components
-- **Pages**: 2 pages (Login, Signup)
-- **API Endpoints**: 25+ endpoints
+- **Total Files**: ~70+ files
+- **Backend Lines**: ~2,100+ lines (main.py alone)
+- **Frontend Lines**: ~5,000+ lines
+- **Components**: 20+ React components
+- **Pages**: 4 pages (Login, LoginNew, Signup, SignupNew)
+- **API Endpoints**: 40+ endpoints
 - **Supported Languages**: 5 programming languages
 - **UI Languages**: 4 languages
 - **Dependencies**: 20+ backend, 8+ frontend
+- **Database Models**: 6 models (User, InterviewSession, ResumeData, Leaderboard, UserStreak, CodeAttempt)
+- **Authentication Methods**: Token-based (Bearer tokens)
+- **Resume Analysis Fields**: 9 fields (skills, experience, education, summary, analysis, certifications, projects, contact_info, raw_text)
 
 ---
 
@@ -1021,7 +1167,7 @@ EMAIL_PASSWORD=your-app-password
   - Enhanced analytics engine
   - Code diff visualization
 
-- **v0.3.0**: UI Revamp & Avatar Integration (Current)
+- **v0.3.0**: UI Revamp & Avatar Integration
   - Modern CSS design system with design tokens
   - Enterprise-friendly color system
   - Dark mode only (removed light/dark toggle)
@@ -1041,10 +1187,75 @@ EMAIL_PASSWORD=your-app-password
   - Compact, professional component styling
   - Timeline-based interview rounds
 
+- **v0.4.0**: User Persistence & Resume Management (Current)
+  - **User Authentication Persistence**:
+    - Token-based authentication with localStorage
+    - User data persistence across sessions
+    - Automatic token validation
+    - Enhanced authentication logging
+    - HTTPBearer dependency for protected endpoints
+    - Optional authentication for flexible error handling
+  - **Resume Management Enhancements**:
+    - Per-user resume storage (no mixing between users)
+    - Comprehensive resume analysis (summary, career level, years of experience)
+    - Resume data persistence in database
+    - Resume status tracking per user
+    - Resume deletion functionality
+    - Multiple safeguards to ensure resume data is always included in profile
+    - Enhanced error handling for resume upload
+    - File validation (type, size)
+    - Detailed resume analysis metadata storage
+  - **Profile Endpoint Improvements**:
+    - Authenticated profile endpoint (`/user/profile`)
+    - Comprehensive error handling with multiple fallback layers
+    - Resume data extraction from database
+    - Analysis metadata parsing from raw_text
+    - Detailed logging for debugging
+    - Final safeguard to ensure resume is always included
+    - Exception handler also fetches resume data
+  - **Career Blueprint Enhancements**:
+    - Dynamic career blueprint based on actual resume data
+    - Years of experience calculation from resume
+    - Career level determination from analysis or experience
+    - Skill gap identification based on resume skills
+    - Personalized time estimates based on experience
+    - Career-level-based skill gap detection
+    - Progress percentage based on interviews completed
+  - **Email System Reliability**:
+    - Retry mechanism with exponential backoff (3 attempts: 2s, 4s, 6s)
+    - 30-second timeout for SMTP connections
+    - Email configuration validation on startup
+    - Detailed error logging for SMTP issues
+    - OTP always printed to console as fallback
+    - OTP always included in API response
+  - **Environment Variable Management**:
+    - Safe `.env` update script (`update_env.py`)
+    - PowerShell wrapper (`update_env.ps1`)
+    - Prevents accidental loss of API keys and passwords
+    - Creates backups before updates
+    - Interactive interface for updating variables
+    - Template file (`.env.example`)
+  - **Frontend Improvements**:
+    - ResizeObserver error suppression
+    - Enhanced error handling in console.error
+    - Window error handler improvements
+    - Unhandled promise rejection handling
+    - Dashboard resume data loading with retry mechanism
+    - Career blueprint fetching and display
+    - Profile refresh triggering after resume upload
+  - **Backend Improvements**:
+    - Authenticated endpoints for user data
+    - User statistics endpoint (`/user/stats`)
+    - Career blueprint endpoint (`/user/career-blueprint`)
+    - Enhanced resume upload with comprehensive analysis
+    - Database persistence for all user data
+    - Comprehensive logging throughout
+    - Multiple error handling layers
+
 ---
 
-**Last Updated**: December 2, 2025
-**Project Status**: Active Development - UI Revamp & Avatar Integration Complete
+**Last Updated**: December 4, 2025
+**Project Status**: Active Development - User Persistence & Resume Management Complete
 **License**: Open Source (Educational)
 
 ---

@@ -19,14 +19,22 @@ const Profile = ({ apiUrl, userId, onResumeChange }) => {
   }, [apiUrl, userId]);
 
   const fetchProfile = async () => {
-    if (!userId) return;
+    // Get auth token from localStorage
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setError('Authentication required. Please log in again.');
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     setError('');
     try {
-      // URL encode the userId to handle special characters like @ in email
-      const encodedUserId = encodeURIComponent(userId);
-      const response = await axios.get(`${apiUrl}/user/${encodedUserId}/profile`);
+      const response = await axios.get(`${apiUrl}/user/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (response.data.status === 'success') {
         console.log('Profile loaded:', response.data); // Debug log
         console.log('Has resume:', response.data.has_resume); // Debug log
@@ -78,8 +86,10 @@ const Profile = ({ apiUrl, userId, onResumeChange }) => {
       return;
     }
 
-    if (!userId) {
-      setError('User ID is required. Please refresh the page.');
+    // Get auth token from localStorage
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setError('Authentication required. Please log in again.');
       return;
     }
 
@@ -89,13 +99,14 @@ const Profile = ({ apiUrl, userId, onResumeChange }) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('user_id', userId);
+      // No need to append user_id - backend will get it from token
       
-      console.log('[Profile] Uploading resume for userId:', userId);
+      console.log('[Profile] Uploading resume with authentication token');
 
       const response = await axios.post(`${apiUrl}/resume/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -131,9 +142,19 @@ const Profile = ({ apiUrl, userId, onResumeChange }) => {
       return;
     }
 
+    // Get auth token from localStorage
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setError('Authentication required. Please log in again.');
+      return;
+    }
+
     try {
-      const encodedUserId = encodeURIComponent(userId);
-      const response = await axios.delete(`${apiUrl}/user/${encodedUserId}/resume`);
+      const response = await axios.delete(`${apiUrl}/user/resume`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (response.data.status === 'success') {
         setError('');
         // Refresh profile to update resume status
