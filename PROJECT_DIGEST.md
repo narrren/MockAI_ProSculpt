@@ -68,7 +68,7 @@
 | **Monaco Editor** | 4.6.0 | VS Code-like code editor |
 | **React Webcam** | 7.2.0 | Webcam access and capture |
 | **Socket.io Client** | 4.6.1 | WebSocket client (not actively used) |
-| **LiveKit Client** | Latest | Real-time video streaming for HeyGen avatar |
+| **LiveKit Client** | Latest | Real-time video streaming for HeyGen avatar (npm package) |
 
 ### Development Tools
 
@@ -431,11 +431,15 @@ pdfminer.six>=20221105        # PDF text extraction
 - **Features**:
   - HeyGen video streaming integration
   - Real-time lip-sync with speech
-  - LiveKit WebRTC connection
+  - LiveKit WebRTC connection (npm package - no CDN dependency)
   - Automatic fallback to browser TTS
   - Error handling and retry logic
   - Session management
   - Professional landscape video display
+  - Automatic concurrent session cleanup and retry
+  - Backend proxy endpoints for secure API key usage
+  - Fresh token generation for each request
+  - Integrated into InterviewWorkspace component
 
 #### 5. `AlertFlash.js`
 - **Purpose**: Full-screen flash alerts
@@ -487,6 +491,24 @@ pdfminer.six>=20221105        # PDF text extraction
   - Success/error handling
   - Detailed error messages
   - Token validation before upload
+
+#### 11. `BugDebuggingRound.js`
+- **Purpose**: Multi-file code debugging scenarios
+- **Features**:
+  - Pre-configured bug scenarios (Payment Checkout, API Rate Limiting, Database Leaks)
+  - Hierarchical file tree navigation with folder structure
+  - File type icons (JavaScript, Python, JSON, etc.)
+  - Monaco Editor with syntax highlighting
+  - Test execution and validation
+  - Real-time code execution with output display
+  - Hint system with toggleable bug hints
+  - Unsaved changes tracking
+  - Auto-save on file switch
+  - Success/error feedback system
+  - Bug counter display
+  - Multi-language support (JavaScript, Python, JSON, CSS, HTML, TypeScript)
+  - Professional dark theme UI
+  - Test results panel with color-coded output
 
 ### Pages
 
@@ -581,6 +603,9 @@ pdfminer.six>=20221105        # PDF text extraction
 | POST | `/api/heygen/stop` | Stop HeyGen session | `{session_id}` | `{status}` |
 | POST | `/api/heygen/stop-all` | Stop all HeyGen sessions | - | `{status}` |
 | POST | `/api/heygen/task` | Send text to HeyGen avatar | `{session_id, text, task_type}` | `{status, data}` |
+| GET | `/bug-scenarios` | List all bug scenarios | - | `{scenarios: [{id, name, description}]}` |
+| GET | `/bug-scenarios/{scenario_id}` | Get bug scenario details | - | `{id, name, description, files, bugs}` |
+| POST | `/bug-scenarios/{scenario_id}/create-project/{session_id}` | Create project from scenario | - | `{status, message}` |
 | POST | `/system-design/analyze` | Analyze system design diagram | `{image_base64, problem_statement}` | `{score, feedback, raw_response}` |
 | POST | `/multi-file/create/{session_id}` | Create multi-file project | `{files: {path: content}, entry_file, language}` | `{project_id, files, project_dir}` |
 | POST | `/multi-file/execute/{session_id}` | Execute multi-file project | `entry_file, language` | `{status, output}` |
@@ -793,7 +818,7 @@ pdfminer.six>=20221105        # PDF text extraction
 ### 10. Avatar System
 - ✅ HeyGen video streaming integration
 - ✅ Real-time lip-sync with speech
-- ✅ LiveKit WebRTC connection
+- ✅ LiveKit WebRTC connection (npm package - no CDN dependency)
 - ✅ Automatic browser TTS fallback
 - ✅ Error handling (quota limits, API errors)
 - ✅ Session cleanup and management
@@ -801,9 +826,12 @@ pdfminer.six>=20221105        # PDF text extraction
 - ✅ Professional avatar appearance
 - ✅ Speech queueing to prevent overlap
 - ✅ Backend proxy endpoints for secure API key usage
-- ✅ Concurrent session limit handling
+- ✅ Automatic concurrent session cleanup and retry
 - ✅ Session stop-all functionality
 - ✅ Proper avatar aspect ratio and positioning
+- ✅ Fresh token generation for each request
+- ✅ Improved error messages with user-friendly fallbacks
+- ✅ Integrated into InterviewWorkspace component
 
 ---
 
@@ -938,8 +966,20 @@ EMAIL_PASSWORD=your-app-password
 
 #### `multi_file_editor.py` (~100 lines)
 - Multi-file project management
+- Virtual file system for debugging scenarios
 - File tree navigation
-- Project execution
+- Project execution engine
+- File update and retrieval
+- Session-based project storage
+
+#### `bug_scenarios.py` (~250 lines)
+- Pre-configured bug scenarios for debugging practice
+- Payment Checkout 500 Error scenario (with require path bug, validation bugs, error handling)
+- API Rate Limit Bypass scenario (security vulnerabilities)
+- Database Connection Leak scenario (resource management)
+- Bug documentation with file locations, line numbers, issues, and fixes
+- Scenario creation and management
+- File structure generation
 
 #### `realtime_feedback.py` (~80 lines)
 - Real-time code analysis

@@ -23,6 +23,8 @@ import Dashboard from './components/Dashboard';
 import CodeAnalysis from './components/CodeAnalysis';
 import AnalysisPage from './components/AnalysisPage';
 import ModernHeader from './components/ModernHeader';
+import BugDebuggingRound from './components/BugDebuggingRound';
+import DatabaseOptimizationLab from './components/DatabaseOptimizationLab';
 import LoginNew from './pages/LoginNew';
 import SignupNew from './pages/SignupNew';
 import speechService from './services/speechService';
@@ -76,6 +78,8 @@ function App() {
   const [showCodeAnalysis, setShowCodeAnalysis] = useState(false);
   const [analysisCode, setAnalysisCode] = useState('');
   const [messages, setMessages] = useState([]);
+  const [showBugDebugging, setShowBugDebugging] = useState(false);
+  const [showDBLab, setShowDBLab] = useState(false);
   const wsRef = useRef(null);
   const webcamRef = useRef(null);
   const frameIntervalRef = useRef(null);
@@ -672,6 +676,46 @@ function App() {
     );
   }
 
+  // Show Code Analysis overlay (highest priority)
+  if (showCodeAnalysis) {
+    return (
+      <>
+        <CodeAnalysis
+          userCode={analysisCode}
+          question={currentCodingQuestion}
+          language={suggestedLanguage}
+          apiUrl={API_URL}
+          onClose={() => setShowCodeAnalysis(false)}
+        />
+      </>
+    );
+  }
+  
+  // Show Bug Debugging Round (high priority - before dashboard)
+  if (showBugDebugging) {
+    return (
+      <div className="app">
+        <BugDebuggingRound
+          apiUrl={API_URL}
+          sessionId={sessionId || `session_${Date.now()}`}
+          onClose={() => setShowBugDebugging(false)}
+        />
+      </div>
+    );
+  }
+
+  // Show Database Optimization Lab (high priority - before dashboard)
+  if (showDBLab) {
+    return (
+      <div className="app">
+        <DatabaseOptimizationLab
+          apiUrl={API_URL}
+          onClose={() => setShowDBLab(false)}
+        />
+      </div>
+    );
+  }
+  
   // Dashboard View
   if (currentView === 'dashboard') {
     return (
@@ -692,6 +736,8 @@ function App() {
           onStartInterview={handleStartInterview}
           onUploadResume={() => setShowResumeUpload(true)}
           refreshTrigger={hasResume}
+          onOpenBugDebugging={() => setShowBugDebugging(true)}
+          onOpenDBLab={() => setShowDBLab(true)}
         />
       </div>
     );
@@ -748,26 +794,12 @@ function App() {
           webcamRef={webcamRef}
           isInterviewerSpeaking={isInterviewerSpeaking}
           currentSpeechText={currentSpeechText}
+          apiUrl={API_URL}
         />
       </div>
     );
   }
-  
-  // Show Code Analysis overlay
-  if (showCodeAnalysis) {
-    return (
-      <>
-        <CodeAnalysis
-          userCode={analysisCode}
-          question={currentCodingQuestion}
-          language={suggestedLanguage}
-          apiUrl={API_URL}
-          onClose={() => setShowCodeAnalysis(false)}
-        />
-      </>
-    );
-  }
-  
+
   // Show Profile
   if (showProfile) {
     return (
@@ -848,6 +880,9 @@ function App() {
         apiUrl={API_URL}
         onStartInterview={handleStartInterview}
         onUploadResume={() => setShowResumeUpload(true)}
+        refreshTrigger={hasResume}
+        onOpenBugDebugging={() => setShowBugDebugging(true)}
+        onOpenDBLab={() => setShowDBLab(true)}
       />
     </div>
   );

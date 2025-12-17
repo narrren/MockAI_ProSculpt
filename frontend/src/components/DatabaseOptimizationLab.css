@@ -1,0 +1,312 @@
+.db-optimization-lab {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.lab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.lab-header h2 {
+  margin: 0;
+  color: #fff;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0 1rem;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #ff6b6b;
+}
+
+.lab-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.lab-sidebar {
+  width: 350px;
+  background: #2a2a2a;
+  border-right: 1px solid #3a3a3a;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.dataset-section,
+.table-info-section {
+  margin-bottom: 2rem;
+}
+
+.dataset-section h3,
+.table-info-section h3 {
+  margin-top: 0;
+  color: #4a9eff;
+  font-size: 1.1rem;
+}
+
+.create-dataset-btn,
+.refresh-info-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+  margin-top: 1rem;
+}
+
+.create-dataset-btn:hover:not(:disabled),
+.refresh-info-btn:hover {
+  background: #3a8eef;
+}
+
+.create-dataset-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success-message {
+  color: #4caf50;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.info-text {
+  color: #ccc;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.schema-info h4 {
+  color: #ccc;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.schema-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.schema-info li {
+  padding: 0.25rem 0;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.lab-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.query-section {
+  margin-bottom: 2rem;
+}
+
+.query-editor-wrapper {
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.query-section h3 {
+  margin-top: 0;
+  color: #4a9eff;
+}
+
+.query-actions {
+  margin-top: 1rem;
+}
+
+.analyze-btn {
+  padding: 0.75rem 2rem;
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  background: #3a8eef;
+}
+
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #ff4444;
+  color: #fff;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.analysis-result {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.analysis-result h3 {
+  margin-top: 0;
+  color: #4a9eff;
+}
+
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metric {
+  background: #1a1a1a;
+  padding: 1rem;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metric-label {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.metric-value.slow {
+  color: #ff6b6b;
+}
+
+.suggestions-section {
+  margin-bottom: 2rem;
+}
+
+.suggestions-section h4 {
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
+.suggestion-card {
+  background: #1a1a1a;
+  border-left: 4px solid #4a9eff;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.suggestion-card.high {
+  border-left-color: #ff6b6b;
+}
+
+.suggestion-card.medium {
+  border-left-color: #ffa500;
+}
+
+.suggestion-card.low {
+  border-left-color: #4caf50;
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.suggestion-type {
+  color: #4a9eff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.severity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.severity-badge.high {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+.severity-badge.medium {
+  background: #ffa500;
+  color: #fff;
+}
+
+.severity-badge.low {
+  background: #4caf50;
+  color: #fff;
+}
+
+.suggestion-content p {
+  margin: 0.5rem 0;
+  color: #e0e0e0;
+  line-height: 1.5;
+}
+
+.suggestion-content strong {
+  color: #4a9eff;
+}
+
+.query-plan-section {
+  margin-top: 2rem;
+}
+
+.query-plan-section h4 {
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
+.query-plan {
+  background: #1a1a1a;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+

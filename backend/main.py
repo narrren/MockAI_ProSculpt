@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from proctoring import Proctor
@@ -14,7 +14,8 @@ from personalities import get_personality_prompt, get_personality_info, list_per
 from code_revision import CodeRevision
 from database import init_db, get_db, User, InterviewSession as DBSession, ResumeData, Leaderboard, UserStreak
 from resume_parser import ResumeParser
-from system_design import SystemDesignAnalyzer
+from bug_scenarios import get_scenario, list_scenarios
+from db_optimization_lab import DatabaseOptimizationLab
 from multi_file_editor import MultiFileEditor
 from realtime_feedback import RealtimeFeedback
 from gamification import GamificationEngine
@@ -95,9 +96,9 @@ print("Initializing Resume Parser...")
 resume_parser = ResumeParser()
 print("Resume Parser initialized")
 
-print("Initializing System Design Analyzer...")
-system_design_analyzer = SystemDesignAnalyzer()
-print("System Design Analyzer initialized")
+print("Initializing Database Optimization Lab...")
+db_optimization_lab = DatabaseOptimizationLab()
+print("Database Optimization Lab initialized")
 
 print("Initializing Multi File Editor...")
 multi_file_editor = MultiFileEditor()
@@ -250,11 +251,6 @@ class OTPVerifyRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: Optional[str] = None
-
-
-class SystemDesignRequest(BaseModel):
-    image_base64: str
-    problem_statement: Optional[str] = None
 
 
 class MultiFileProjectRequest(BaseModel):
@@ -1723,16 +1719,6 @@ async def delete_resume(current_user: User = Depends(get_current_user)):
         }
 
 
-@app.post("/system-design/analyze")
-async def analyze_system_design(request: SystemDesignRequest):
-    """Analyze system design diagram using Gemini Vision"""
-    result = system_design_analyzer.analyze_design(
-        request.image_base64,
-        request.problem_statement
-    )
-    return result
-
-
 @app.post("/multi-file/create/{session_id}")
 async def create_multi_file_project(request: MultiFileProjectRequest, session_id: str):
     """Create a multi-file code project"""
@@ -1755,10 +1741,82 @@ async def get_file_tree(session_id: str):
 
 
 @app.post("/multi-file/update/{session_id}")
-async def update_file(session_id: str, file_path: str, content: str):
+async def update_file(
+    session_id: str,
+    file_path: str = Query(..., description="Path to the file to update"),
+    content: str = Query(..., description="New content for the file")
+):
     """Update a file in the project"""
     result = multi_file_editor.update_file(session_id, file_path, content)
     return result
+
+
+# Bug Scenarios Endpoints
+@app.get("/bug-scenarios")
+async def list_bug_scenarios():
+    """List all available bug scenarios"""
+    scenarios = list_scenarios()
+    return {"scenarios": scenarios}
+
+
+@app.get("/bug-scenarios/{scenario_id}")
+async def get_bug_scenario(scenario_id: str):
+    """Get a specific bug scenario"""
+    scenario = get_scenario(scenario_id)
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    return {
+        "id": scenario_id,
+        "name": scenario["name"],
+        "description": scenario["description"],
+        "files": scenario["files"]
+    }
+
+
+@app.post("/bug-scenarios/{scenario_id}/create-project/{session_id}")
+async def create_project_from_scenario(scenario_id: str, session_id: str):
+    """Create a multi-file project from a bug scenario"""
+    scenario = get_scenario(scenario_id)
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    
+    # Create project using multi-file editor
+    result = multi_file_editor.create_project(session_id, scenario["files"])
+    return {
+        **result,
+        "scenario_id": scenario_id,
+        "scenario_name": scenario["name"],
+        "description": scenario["description"]
+    }
+
+
+# Database Optimization Lab Endpoints
+@app.post("/db-lab/create-dataset")
+async def create_large_dataset(dataset_id: str = "default", num_rows: int = 1000000):
+    """Create a large dataset for performance testing"""
+    result = db_optimization_lab.create_large_dataset(dataset_id, num_rows)
+    return result
+
+
+@app.post("/db-lab/analyze-query")
+async def analyze_query_performance(dataset_id: str, query: str):
+    """Analyze query performance and get optimization suggestions"""
+    result = db_optimization_lab.analyze_query_performance(dataset_id, query)
+    return result
+
+
+@app.get("/db-lab/table-info/{dataset_id}")
+async def get_table_info(dataset_id: str):
+    """Get table schema and index information"""
+    result = db_optimization_lab.get_table_info(dataset_id)
+    return result
+
+
+@app.delete("/db-lab/dataset/{dataset_id}")
+async def cleanup_dataset(dataset_id: str):
+    """Clean up a dataset"""
+    db_optimization_lab.cleanup_dataset(dataset_id)
+    return {"status": "success", "message": "Dataset cleaned up"}
 
 
 @app.post("/realtime-feedback/check/{session_id}")

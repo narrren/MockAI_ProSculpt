@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Room, RoomEvent, ConnectionState } from 'livekit-client';
 import { t } from '../i18n/languages';
 import './InterviewerAvatar.css';
 
@@ -207,17 +208,74 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
       } else if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         let errorMsg = `Failed to create session: ${response.status} - ${errorText.substring(0, 200)}`;
+        let retrySucceeded = false;
         
         // Check for specific HeyGen API errors
         try {
           const errorData = JSON.parse(errorText);
           if (errorData.code === 10004 || errorData.message?.includes('Concurrent limit') || errorData.message?.includes('concurrent')) {
             // HeyGen free/trial plans often have a limit of 1 concurrent session
-            // This usually means there's a session from a previous page load or another tab
-            // Don't retry - HeyGen doesn't provide a way to list/stop all sessions
-            // Just fall back to browser TTS immediately for better UX
-            console.log("[Avatar] Concurrent limit reached - falling back to browser TTS (no retry)");
-            errorMsg = 'HeyGen API: Concurrent session limit reached. This usually means there\'s an active session from a previous page load. Please close all browser tabs/windows, wait 30 seconds, then refresh. Browser TTS is active and working perfectly - the interview will continue normally.';
+            // Try to stop all sessions and retry once
+            console.log("[Avatar] Concurrent limit reached - attempting to stop all sessions and retry...");
+            setStatus("Clearing existing sessions...");
+            
+            try {
+              // Call stop-all endpoint to clear all sessions
+              const stopAllResponse = await fetch(`${apiUrl || 'http://localhost:8000'}/api/heygen/stop-all`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+              console.log("[Avatar] Stop-all response:", stopAllResponse.status);
+              
+              // Wait for HeyGen to process the stop request
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              
+              // Get a fresh token
+              await getSessionToken();
+              
+              // Retry creating the session
+              console.log("[Avatar] Retrying session creation after cleanup...");
+              const retryResponse = await fetch(`${HEYGEN_CONFIG.serverUrl}/v1/streaming.new`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${sessionTokenRef.current}`,
+                },
+                body: JSON.stringify({
+                  quality: "high",
+                  avatar_name: HEYGEN_CONFIG.avatarId,
+                  voice: HEYGEN_CONFIG.voiceId ? { voice_id: HEYGEN_CONFIG.voiceId } : undefined,
+                  version: "v2",
+                  video_encoding: "H264",
+                }),
+              });
+              
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                if (retryData.data) {
+                  console.log("[Avatar] Session created successfully after cleanup!");
+                  sessionInfoRef.current = retryData.data;
+                  retrySucceeded = true;
+                  // Clear error message since retry succeeded
+                  errorMsg = null;
+                  // Continue with normal flow - LiveKit will be initialized below
+                  console.log("[Avatar] Continuing with LiveKit initialization after successful retry...");
+                } else {
+                  // Retry succeeded but no data
+                  errorMsg = 'Invalid response from HeyGen API after retry: missing data field';
+                }
+              } else {
+                // Retry also failed, fall back to browser TTS
+                const retryErrorText = await retryResponse.text().catch(() => 'Unknown error');
+                console.warn("[Avatar] Retry after cleanup also failed:", retryErrorText);
+                errorMsg = 'HeyGen API: Concurrent session limit reached. This usually means there\'s an active session from a previous page load. Please close all browser tabs/windows, wait 30 seconds, then refresh. Browser TTS is active and working perfectly - the interview will continue normally.';
+              }
+            } catch (retryError) {
+              console.warn("[Avatar] Error during concurrent session cleanup/retry:", retryError);
+              errorMsg = 'HeyGen API: Concurrent session limit reached. This usually means there\'s an active session from a previous page load. Please close all browser tabs/windows, wait 30 seconds, then refresh. Browser TTS is active and working perfectly - the interview will continue normally.';
+            }
           } else if (errorData.message?.includes('quota') || errorData.message?.includes('Quota') || errorData.code === 10005) {
             // HeyGen quota/credit limit reached
             errorMsg = 'HeyGen API: Quota limit reached. The HeyGen account has run out of credits. Browser TTS is active and working perfectly - the interview will continue normally.';
@@ -228,14 +286,18 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
           // If JSON parsing fails, use the original error message
         }
         
-        console.error("[Avatar] HeyGen session creation failed:", errorMsg);
-        setError(errorMsg);
-        setStatus("Avatar unavailable (using browser TTS)");
-        setAvatarReady(false);
-        if (onAvatarReady) {
-          onAvatarReady(false); // Immediately notify parent that avatar failed
+        // Only set error and throw if retry didn't succeed
+        if (!retrySucceeded && errorMsg) {
+          console.error("[Avatar] HeyGen session creation failed:", errorMsg);
+          setError(errorMsg);
+          setStatus("Avatar unavailable (using browser TTS)");
+          setAvatarReady(false);
+          if (onAvatarReady) {
+            onAvatarReady(false); // Immediately notify parent that avatar failed
+          }
+          throw new Error(errorMsg);
         }
-        throw new Error(errorMsg);
+        // If retry succeeded, continue with normal flow (sessionInfoRef.current is already set)
       } else {
         const data = await response.json();
         if (!data.data) {
@@ -251,39 +313,13 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
         sessionInfoRef.current = data.data;
       }
 
-      // Load LiveKit client dynamically
-      console.log("[Avatar] Checking LiveKit client...");
-      if (typeof window !== 'undefined' && !window.LivekitClient) {
-        console.log("[Avatar] LiveKit client not found, loading from CDN...");
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js';
-        script.onload = () => {
-          console.log("[Avatar] LiveKit client loaded successfully");
-          // Wait a bit for LiveKit to fully initialize
-          setTimeout(() => {
-            console.log("[Avatar] Initializing LiveKit room...");
-            initializeLiveKitRoom();
-          }, 100);
-        };
-        script.onerror = (err) => {
-          const errorMsg = 'Failed to load LiveKit client from CDN. Please check your internet connection.';
-          console.error("[Avatar] LiveKit script load error:", err);
-          setError(errorMsg);
-          setStatus("Failed to load LiveKit client");
-          setAvatarReady(false);
-          if (onAvatarReady) {
-            onAvatarReady(false);
-          }
-        };
-        document.head.appendChild(script);
-      } else {
-        console.log("[Avatar] LiveKit client already available, initializing room...");
-        // Use setTimeout to ensure this happens asynchronously and doesn't block
-        setTimeout(() => {
-          console.log("[Avatar] Calling initializeLiveKitRoom() now...");
-          initializeLiveKitRoom();
-        }, 50);
-      }
+      // LiveKit is now imported as npm package, no need to load from CDN
+      console.log("[Avatar] LiveKit client available (npm package), initializing room...");
+      // Use setTimeout to ensure this happens asynchronously and doesn't block
+      setTimeout(() => {
+        console.log("[Avatar] Calling initializeLiveKitRoom() now...");
+        initializeLiveKitRoom();
+      }, 50);
     } catch (error) {
       const errorMsg = error.message || 'Failed to create avatar session';
       console.error("Error creating HeyGen session:", error);
@@ -302,19 +338,7 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
   const initializeLiveKitRoom = () => {
     try {
       console.log("[Avatar] Initializing LiveKit room...");
-      if (!window.LivekitClient) {
-        const errorMsg = "LiveKit client not loaded. Please check your internet connection and refresh the page.";
-        console.error("[Avatar]", errorMsg);
-        setError(errorMsg);
-        setStatus("Failed to load LiveKit client");
-        setAvatarReady(false);
-        if (onAvatarReady) {
-          onAvatarReady(false);
-        }
-        return;
-      }
-
-      console.log("[Avatar] LiveKit client available");
+      
       if (!sessionInfoRef.current || !sessionInfoRef.current.url || !sessionInfoRef.current.access_token) {
         const errorMsg = "Missing session information. Please refresh the page.";
         console.error("[Avatar]", errorMsg);
@@ -330,11 +354,11 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
 
       console.log("[Avatar] Session info available, creating room...");
 
-      const room = new window.LivekitClient.Room();
+      const room = new Room();
       const mediaStream = new MediaStream();
 
       // Handle track subscribed events
-      room.on(window.LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
         console.log(`[Avatar] Track subscribed: ${track.kind} from ${participant?.identity || 'unknown'}`);
         if (track.kind === "video" || track.kind === "audio") {
           mediaStream.addTrack(track.mediaStreamTrack);
@@ -359,7 +383,7 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
       });
       
       // Also handle track published events (tracks that become available)
-      room.on(window.LivekitClient.RoomEvent.TrackPublished, (publication, participant) => {
+      room.on(RoomEvent.TrackPublished, (publication, participant) => {
         console.log(`[Avatar] Track published: ${publication.kind} from ${participant?.identity || 'unknown'}`);
         // Automatically subscribe to published tracks
         if (publication.kind === "video" || publication.kind === "audio") {
@@ -382,7 +406,7 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
         }
       });
 
-      room.on(window.LivekitClient.RoomEvent.Disconnected, (reason) => {
+      room.on(RoomEvent.Disconnected, (reason) => {
         console.log("Room disconnected:", reason);
         setStatus(`Room disconnected: ${reason}`);
         setAvatarReady(false);
@@ -391,9 +415,9 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
         }
       });
 
-      room.on(window.LivekitClient.RoomEvent.ConnectionStateChanged, (state) => {
+      room.on(RoomEvent.ConnectionStateChanged, (state) => {
         console.log("Connection state changed:", state);
-        if (state === window.LivekitClient.ConnectionState.Disconnected) {
+        if (state === ConnectionState.Disconnected) {
           setStatus("Connection lost");
           setAvatarReady(false);
           if (onAvatarReady) {
@@ -642,7 +666,7 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
         }
         
         // Also listen for new participants joining
-        roomRef.current.on(window.LivekitClient.RoomEvent.ParticipantConnected, (participant) => {
+        roomRef.current.on(RoomEvent.ParticipantConnected, (participant) => {
           console.log(`[Avatar] New participant connected: ${participant.identity}`);
           // Tracks will be auto-subscribed via TrackPublished event handler above
         });
@@ -900,16 +924,13 @@ const InterviewerAvatar = ({ isSpeaking, interviewerName = null, currentSpeech =
         setTimeout(() => {
           if (!roomRef.current && avatarReady === null && !error) {
             console.warn("[Avatar] LiveKit room not initialized after 2 seconds, checking status...");
-            // Check if LiveKit client is available
-            if (window.LivekitClient) {
-              console.warn("[Avatar] LiveKit client is available but room not initialized, attempting to initialize now...");
-              if (sessionInfoRef.current && sessionInfoRef.current.url) {
-                initializeLiveKitRoom();
-              } else {
-                console.error("[Avatar] Cannot initialize LiveKit room: missing session info");
-              }
+            // LiveKit is now imported as npm package, so it's always available
+            // Check if we have session info to initialize
+            if (sessionInfoRef.current && sessionInfoRef.current.url) {
+              console.warn("[Avatar] LiveKit client available but room not initialized, attempting to initialize now...");
+              initializeLiveKitRoom();
             } else {
-              console.warn("[Avatar] LiveKit client not loaded yet, waiting...");
+              console.error("[Avatar] Cannot initialize LiveKit room: missing session info");
             }
           }
         }, 2000);

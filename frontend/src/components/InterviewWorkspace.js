@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import Webcam from 'react-webcam';
+import InterviewerAvatar from './InterviewerAvatar';
 import './InterviewWorkspace.css';
 
 function InterviewWorkspace({ 
@@ -14,7 +15,8 @@ function InterviewWorkspace({
   onEndInterview,
   webcamRef: parentWebcamRef,
   isInterviewerSpeaking,
-  currentSpeechText
+  currentSpeechText,
+  apiUrl = 'http://localhost:8000'
 }) {
   // Use parent webcam ref if provided, otherwise create local one
   const localWebcamRef = useRef(null);
@@ -29,6 +31,7 @@ function InterviewWorkspace({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarReady, setAvatarReady] = useState(null);
   const chatEndRef = useRef(null);
 
   // Sample questions structure - will be replaced with real data
@@ -257,7 +260,13 @@ var twoSum = function(nums, target) {
           {/* Video Feeds */}
           <div className="video-container">
             <div className="interviewer-video">
-              {isInterviewerSpeaking && (
+              <InterviewerAvatar
+                isSpeaking={isInterviewerSpeaking}
+                currentSpeech={currentSpeechText}
+                apiUrl={apiUrl}
+                onAvatarReady={setAvatarReady}
+              />
+              {isInterviewerSpeaking && avatarReady !== false && (
                 <div className="speaking-indicator">
                   <span className="material-symbols-outlined">mic</span>
                   <span>Speaking...</span>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
 
-function Dashboard({ user, apiUrl, onStartInterview, onUploadResume, refreshTrigger }) {
+function Dashboard({ user, apiUrl, onStartInterview, onUploadResume, refreshTrigger, onOpenBugDebugging, onOpenDBLab }) {
   const [userStats, setUserStats] = useState({
     globalRank: 0,
     interviewsCompleted: 0,
@@ -382,6 +382,30 @@ function Dashboard({ user, apiUrl, onStartInterview, onUploadResume, refreshTrig
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Advanced Practice Section */}
+      <div className="dashboard-card advanced-practice-card">
+        <p className="card-title">Advanced Technical Practice</p>
+        <p className="profile-text muted" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+          Go beyond LeetCode with real-world engineering challenges
+        </p>
+        <div className="advanced-practice-grid">
+          {onOpenBugDebugging && (
+            <button className="practice-card" onClick={onOpenBugDebugging}>
+              <div className="practice-icon">🐛</div>
+              <h3>Broken Repo Debugging</h3>
+              <p>Find and fix bugs in real codebases</p>
+            </button>
+          )}
+          {onOpenDBLab && (
+            <button className="practice-card" onClick={onOpenDBLab}>
+              <div className="practice-icon">🗄️</div>
+              <h3>Database Optimization Lab</h3>
+              <p>Optimize SQL queries on 1M+ row datasets</p>
+            </button>
+          )}
         </div>
       </div>
 

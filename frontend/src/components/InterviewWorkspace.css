@@ -607,9 +607,14 @@ details[open] .expand-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .speaking-indicator {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -618,6 +623,8 @@ details[open] .expand-icon {
   border-radius: 0.5rem;
   color: white;
   font-size: 0.875rem;
+  z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
 .speaking-indicator .material-symbols-outlined {
